@@ -964,18 +964,12 @@
       </div>
     </div>
     <div class="chart-grid" style="grid-template-columns:1fr;">
-      <div class="chart-box tall"><div class="chart-title">Rate Contratado vs. Rate Alcanzado por recalada (MT/día)</div><canvas id="chartKarvunaRate"></canvas></div>
-    </div>
-    <div class="chart-grid" style="grid-template-columns:1fr;">
       <div class="chart-box"><div class="chart-title">Costo USD/Tonelada por viaje</div><canvas id="chartKarvunaCosto"></canvas></div>
     </div>
     <div class="chart-grid" style="grid-template-columns:1fr;">
       <div class="chart-box tall"><div class="chart-title">Detenciones por tipo y por viaje (horas)</div><canvas id="chartKarvunaDetenciones"></canvas></div>
     </div>
     <div class="nota-pie">
-      Rate Contratado vs. Rate Alcanzado: fuente <b>Estadística Operacional de Naves</b> (columnas Rate Contratado y Rate Operacional,
-      recaladas de Karvuna · Caliza 2026). Algunas recaladas no tienen Rate Contratado registrado en la fuente (columna vacía) y
-      quedan sin esa barra en el gráfico.<br>
       Costo USD/Tonelada y Detenciones por tipo: fuente <b>SOF Karvuna</b> — Resumen de Operaciones y Detenciones. Solo se incluyen
       los 8 viajes de <b>descarga</b> de Caliza (se excluyen V.170, V.16 y V.22, cargas break-bulk/chatarra con ventanas operativas
       muy cortas y no comparables). Rate Neto (SOF) = Toneladas ÷ Horas Netas (descontando detenciones dentro de la operación) × 24.
@@ -1785,52 +1779,14 @@ function renderAcerosAB(){
    RENDER SECCIÓN 9 · KARVUNA — DETENCIONES Y COSTOS
 ===================================================================== */
 function renderKarvunaDetenciones(){
-  // --- Gráfico 1: Rate Contratado vs. Rate Alcanzado — fuente: Estadística Operacional de Naves ---
-  const ratesViajes = DATA.karvunaRates.viajes;
-  const ratesLabels = ratesViajes.map(v=>v.label);
-
-  destroy('chartKarvunaRate');
-  const ctxR = document.getElementById('chartKarvunaRate').getContext('2d');
-  charts['chartKarvunaRate'] = new Chart(ctxR, {
-    data:{
-      labels: ratesLabels,
-      datasets:[
-        {
-          type:'bar', label:'Rate Contratado (MT/día)', data: ratesViajes.map(v=>v.contratado!=null?Math.round(v.contratado):null),
-          backgroundColor: AZULCLARO, borderRadius:2,
-          datalabels:{...dlBase, display:true, formatter: labelFmt(fmtInt)}
-        },
-        {
-          type:'bar', label:'Rate Alcanzado (MT/día)', data: ratesViajes.map(v=>Math.round(v.rateNeto)),
-          backgroundColor: AZUL, borderRadius:2,
-          datalabels:{...dlBase, display:true, formatter: labelFmt(fmtInt)}
-        }
-      ]
-    },
-    options:{
-      responsive:true,
-      layout:{padding:{top:16}},
-      plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:9.5}}}},
-      scales:{
-        y:{beginAtZero:true, ticks:{font:{size:9}}},
-        x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45, minRotation:0}}
-      }
-    }
-  });
-
-  const rateNetoProm = avg(ratesViajes.map(v=>v.rateNeto));
-  const rateBrutoProm = avg(ratesViajes.map(v=>v.rateBruto));
-  const contratadoProm = avg(ratesViajes.filter(v=>v.contratado!=null).map(v=>v.contratado));
-  const cumplNetoNaves = rateNetoProm/contratadoProm;
-
-  // --- Gráficos 2 y 3: Costo USD/Ton y Detenciones — fuente: SOF Karvuna ---
+  // --- Gráficos: Costo USD/Ton y Detenciones — fuente: SOF Karvuna ---
   const viajes = DATA.karvunaDetenciones.viajes;
   const labels = viajes.map(v=>v.viaje);
 
-  // Gráfico 2: Costo USD/Tonelada
+  // Gráfico 1: Costo USD/Tonelada
   singleBar('chartKarvunaCosto', labels, viajes.map(v=>Math.round(v.usdTon*1000)/1000), NARANJA, v=>'$'+v.toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2}));
 
-  // Gráfico 3: Detenciones por tipo (stacked)
+  // Gráfico 2: Detenciones por tipo (stacked)
   destroy('chartKarvunaDetenciones');
   const ctxD = document.getElementById('chartKarvunaDetenciones').getContext('2d');
   const tiposDet = [
@@ -1876,9 +1832,8 @@ function renderKarvunaDetenciones(){
   document.getElementById('valorDetTotal').textContent = fmt1(detTotal)+' h';
 
   document.getElementById('insightKarvunaDet').innerHTML =
-    `<b>INSIGHT KARVUNA ·</b> En las ${ratesViajes.length} recaladas de Caliza (Estadística Operacional de Naves), el Rate Alcanzado promedio (${fmtInt(rateNetoProm)} MT/día) ` +
-    `supera el Rate Contratado promedio (${fmtInt(contratadoProm)} MT/día) en ${fmtPct(cumplNetoNaves-1)}. ` +
-    `Según el detalle SOF, el viaje ${viajeMasDetenido.viaje} tuvo la mayor cantidad de horas detenidas, lo que explica su bajo Rate Bruto (${fmtInt(viajeMasDetenido.rateBruto)} MT/día) ` +
+    `<b>INSIGHT KARVUNA ·</b> En las ${viajes.length} descargas de Caliza analizadas (SOF), el costo promedio es ${'$'+usdTonProm.toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2})} USD/Ton. ` +
+    `El viaje ${viajeMasDetenido.viaje} tuvo la mayor cantidad de horas detenidas, lo que explica su bajo Rate Bruto (${fmtInt(viajeMasDetenido.rateBruto)} MT/día) ` +
     `pese a un Rate Neto normal (${fmtInt(viajeMasDetenido.rateNeto)} MT/día) en esa fuente.`;
 }
 
