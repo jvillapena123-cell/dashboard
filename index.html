@@ -1,0 +1,2855 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTP · Tablero de Control de Gestión 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>if(typeof Chart==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"><\/script>');}</script>
+<script>if(typeof Chart==='undefined'){document.write('<script src="https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js"><\/script>');}</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script>if(typeof ChartDataLabels==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"><\/script>');}</script>
+<script>if(typeof ChartDataLabels==='undefined'){document.write('<script src="https://unpkg.com/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"><\/script>');}</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>if(typeof XLSX==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');}</script>
+<script>if(typeof XLSX==='undefined'){document.write('<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');}</script>
+<style>
+  :root{
+    --azul:#1F3A6E;
+    --naranja:#E8804A;
+    --azulclaro:#4A6FA5;
+    --gris:#E8E8EC;
+    --gristxt:#5B6472;
+    --blanco:#FFFFFF;
+    --verde-ok:#3E8E5A;
+    --rojo-warn:#C64B3C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Montserrat',Arial,sans-serif;
+    background:#F3F4F7;
+    color:#1B2233;
+  }
+  header.banner{
+    background:var(--azul);
+    color:var(--blanco);
+    padding:22px 28px 16px 28px;
+  }
+  .lib-error-banner{
+    display:none;
+    background:#C64B3C;
+    color:#fff;
+    text-align:center;
+    font-size:13px;
+    font-weight:700;
+    padding:12px 20px;
+  }
+  .lib-error-banner.show{
+    display:block;
+  }
+  header.banner h1{
+    margin:0;
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:.3px;
+  }
+  header.banner p{
+    margin:6px 0 0 0;
+    font-size:13px;
+    font-style:italic;
+    color:#CBD6EA;
+    font-weight:500;
+  }
+  .wrap{
+    max-width:1400px;
+    margin:0 auto;
+    padding:20px 24px 60px 24px;
+  }
+  /* ---------- Botón de actualización + barra ---------- */
+  .update-bar{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin:0 0 22px 0;
+    flex-wrap:wrap;
+  }
+  .btn-update{
+    background:var(--azul);
+    color:var(--blanco);
+    border:none;
+    border-radius:8px;
+    padding:11px 18px;
+    font-family:'Montserrat',Arial,sans-serif;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    box-shadow:0 1px 4px rgba(31,58,110,.18);
+    transition:.15s;
+  }
+  .btn-update:hover{
+    background:#162c54;
+  }
+  .btn-update .btn-ico{
+    font-size:15px;
+  }
+  .update-hint{
+    font-size:11.5px;
+    color:var(--gristxt);
+    font-style:italic;
+  }
+  /* ---------- Modal (ventana aparte de carga de datos) ---------- */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(20,28,48,.55);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .modal-overlay.open{
+    display:flex;
+  }
+  .modal-window{
+    background:var(--blanco);
+    border-radius:14px;
+    max-width:900px;
+    width:100%;
+    max-height:90vh;
+    overflow-y:auto;
+    padding:24px 26px 26px 26px;
+    box-shadow:0 12px 40px rgba(0,0,0,.35);
+  }
+  .modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .modal-header h2{
+    margin:0;
+    font-size:17px;
+    color:var(--azul);
+    font-weight:700;
+  }
+  .modal-close{
+    background:none;
+    border:none;
+    font-size:18px;
+    color:var(--gristxt);
+    cursor:pointer;
+    line-height:1;
+    padding:4px 8px;
+    border-radius:6px;
+  }
+  .modal-close:hover{
+    background:var(--gris);
+    color:var(--azul);
+  }
+  .modal-window .sub{
+    font-size:12px;
+    color:var(--gristxt);
+    margin:0 0 16px 0;
+  }
+  .btn-apply{
+    margin-top:18px;
+    width:100%;
+    background:var(--naranja);
+    color:var(--blanco);
+    border:none;
+    border-radius:8px;
+    padding:11px;
+    font-family:'Montserrat',Arial,sans-serif;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn-apply:hover{
+    background:#d16f39;
+  }
+  /* ---------- Ventana de clave de acceso ---------- */
+  .password-window{
+    max-width:380px;
+  }
+  .password-input{
+    width:100%;
+    padding:11px 12px;
+    border:1.5px solid #C4CBDA;
+    border-radius:8px;
+    font-family:'Montserrat',Arial,sans-serif;
+    font-size:14px;
+    box-sizing:border-box;
+    outline:none;
+    transition:.15s;
+  }
+  .password-input:focus{
+    border-color:var(--azul);
+  }
+  .password-error{
+    display:none;
+    color:var(--rojo-warn);
+    font-size:11.5px;
+    font-weight:600;
+    margin-top:8px;
+  }
+  .password-error.show{
+    display:block;
+  }
+  /* ---------- Upload panel (contenido dentro del modal) ---------- */
+  .upload-panel{
+    background:var(--blanco);
+    border-radius:12px;
+    padding:18px 20px;
+    margin-bottom:28px;
+    box-shadow:0 1px 4px rgba(31,58,110,.08);
+  }
+  .upload-panel h2{
+    margin:0 0 4px 0;
+    font-size:15px;
+    color:var(--azul);
+    font-weight:700;
+  }
+  .upload-panel .sub{
+    font-size:12px;
+    color:var(--gristxt);
+    margin:0 0 14px 0;
+  }
+  .upload-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));
+    gap:14px;
+  }
+  .dropzone{
+    border:2px dashed #C4CBDA;
+    border-radius:10px;
+    padding:14px 12px;
+    text-align:center;
+    cursor:pointer;
+    transition:.15s;
+    background:#FAFBFD;
+    position:relative;
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color:var(--naranja);
+    background:#FFF6F0;
+  }
+  .dropzone .ico{
+    font-size:22px;
+    margin-bottom:6px;
+  }
+  .dropzone .titulo{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--azul);
+    margin-bottom:3px;
+  }
+  .dropzone .hint{
+    font-size:10.5px;
+    color:var(--gristxt);
+  }
+  .dropzone .estado{
+    margin-top:8px;
+    font-size:10.5px;
+    font-weight:600;
+    min-height:14px;
+  }
+  .dropzone input{
+    display:none;
+  }
+  .estado.ok{color:var(--verde-ok);}
+  .estado.err{color:var(--rojo-warn);}
+  .estado.default{color:var(--gristxt); font-weight:500; font-style:italic;}
+  /* ---------- Sections ---------- */
+  section.bloque{
+    background:var(--blanco);
+    border-radius:12px;
+    padding:20px 22px 10px 22px;
+    margin-bottom:22px;
+    box-shadow:0 1px 4px rgba(31,58,110,.08);
+  }
+  section.bloque h2.titulo-seccion{
+    font-size:14.5px;
+    font-weight:700;
+    color:var(--blanco);
+    background:var(--azul);
+    padding:9px 14px;
+    border-radius:7px;
+    margin:0 0 18px 0;
+    letter-spacing:.2px;
+  }
+  .chart-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:18px;
+    margin-bottom:14px;
+  }
+  .chart-grid.dos-col{
+    grid-template-columns:repeat(2, 1fr);
+  }
+  .chart-box{
+    background:#FBFBFD;
+    border:1px solid var(--gris);
+    border-radius:10px;
+    padding:12px 10px 6px 10px;
+  }
+  .chart-box .chart-title{
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--azul);
+    text-align:center;
+    margin-bottom:6px;
+  }
+  .chart-box canvas{
+    max-height:230px;
+  }
+  .chart-box.tall canvas{
+    max-height:320px;
+  }
+  .nota-pie{
+    font-size:10.5px;
+    color:var(--gristxt);
+    font-style:italic;
+    padding:8px 4px 14px 4px;
+    line-height:1.5;
+    border-top:1px solid var(--gris);
+    margin-top:6px;
+  }
+  .insight{
+    background:#FFF3EC;
+    border-left:4px solid var(--naranja);
+    border-radius:6px;
+    padding:9px 12px;
+    font-size:11.5px;
+    color:#7A3E1D;
+    font-weight:600;
+    margin-bottom:14px;
+  }
+  /* ---------- Mini KPI cards (Sección Seguridad) ---------- */
+  .kpi-mini-row{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:12px;
+    margin-bottom:18px;
+  }
+  .kpi-mini-card{
+    background:#FBFBFD;
+    border:1px solid var(--gris);
+    border-radius:10px;
+    padding:12px 12px 10px 12px;
+    border-top:4px solid var(--gris);
+  }
+  .kpi-mini-card.ok{ border-top-color:var(--verde-ok); }
+  .kpi-mini-card.warn{ border-top-color:var(--rojo-warn); }
+  .kpi-mini-card .terminal{
+    font-size:10px;
+    font-weight:700;
+    color:var(--gristxt);
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  .kpi-mini-card .valor{
+    font-size:20px;
+    font-weight:800;
+    color:var(--azul);
+    margin:4px 0 2px 0;
+  }
+  .kpi-mini-card .etiqueta{
+    font-size:10.5px;
+    color:var(--gristxt);
+    font-weight:600;
+  }
+  .status-chip{
+    display:inline-block;
+    margin-top:6px;
+    font-size:9.5px;
+    font-weight:700;
+    padding:2px 8px;
+    border-radius:12px;
+    letter-spacing:.2px;
+  }
+  .status-chip.ok{ background:#E6F4EB; color:var(--verde-ok); }
+  .status-chip.warn{ background:#FBE9E6; color:var(--rojo-warn); }
+  .status-chip.neutral{ background:var(--gris); color:var(--gristxt); }
+  /* ---------- Tarjeta de alerta (% indisponibilidad) ---------- */
+  .kpi-alert-row{
+    margin-bottom:18px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .kpi-alert{
+    display:inline-block;
+    background:#FBE9E6;
+    border:1.5px solid var(--rojo-warn);
+    border-radius:10px;
+    padding:14px 26px;
+  }
+  .kpi-alert-valor{
+    font-size:34px;
+    font-weight:800;
+    color:var(--rojo-warn);
+    line-height:1;
+  }
+  .kpi-alert-etiqueta{
+    font-size:12px;
+    color:#7A2A20;
+    font-weight:700;
+    margin-top:6px;
+    letter-spacing:.2px;
+  }
+  .kpi-alert.ok{
+    background:#E6F4EB;
+    border-color:var(--verde-ok);
+  }
+  .kpi-alert.ok .kpi-alert-valor{
+    color:var(--verde-ok);
+  }
+  .kpi-alert.ok .kpi-alert-etiqueta{
+    color:#1F5C39;
+  }
+  .kpi-alert.info{
+    background:#E9EDF5;
+    border-color:var(--azul);
+  }
+  .kpi-alert.info .kpi-alert-valor{
+    color:var(--azul);
+  }
+  .kpi-alert.info .kpi-alert-etiqueta{
+    color:var(--azul);
+  }
+  .kpi-alert.info-light{
+    background:#EEF2F8;
+    border-color:var(--azulclaro);
+  }
+  .kpi-alert.info-light .kpi-alert-valor{
+    color:var(--azulclaro);
+  }
+  .kpi-alert.info-light .kpi-alert-etiqueta{
+    color:var(--azulclaro);
+  }
+  /* ---------- Tarjeta dividida (Norte | Sur) ---------- */
+  .kpi-split-card{
+    background:var(--blanco);
+    border:1.5px solid var(--gris);
+    border-radius:10px;
+    overflow:hidden;
+    min-width:220px;
+  }
+  .kpi-split-title{
+    background:#F3F4F7;
+    color:var(--gristxt);
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    text-align:center;
+    padding:7px 10px;
+    border-bottom:1px solid var(--gris);
+  }
+  .kpi-split-body{
+    display:flex;
+  }
+  .kpi-split-half{
+    flex:1;
+    text-align:center;
+    padding:14px 18px;
+  }
+  .kpi-split-divider{
+    width:1px;
+    background:var(--gris);
+    margin:10px 0;
+  }
+  .kpi-split-valor{
+    font-size:26px;
+    font-weight:800;
+    line-height:1;
+  }
+  .kpi-split-valor.norte{ color:var(--azul); }
+  .kpi-split-valor.sur{ color:var(--azulclaro); }
+  .kpi-split-etiqueta{
+    font-size:11px;
+    color:var(--gristxt);
+    font-weight:700;
+    margin-top:6px;
+    letter-spacing:.2px;
+  }
+  /* ---------- Visión general (4 columnas) ---------- */
+  .overview-grid{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:16px;
+  }
+  .overview-card{
+    background:#FBFBFD;
+    border:1px solid var(--gris);
+    border-radius:12px;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+  }
+  .overview-title{
+    font-size:13px;
+    font-weight:800;
+    color:var(--azul);
+    margin-bottom:12px;
+  }
+  .overview-stat-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .overview-stat{
+    flex:1;
+    text-align:center;
+    background:var(--blanco);
+    border-radius:8px;
+    padding:8px 4px;
+    border:1px solid var(--gris);
+  }
+  .overview-stat-valor{
+    font-size:19px;
+    font-weight:800;
+    color:var(--azul);
+    line-height:1.1;
+  }
+  .overview-stat-valor.warn{ color:var(--rojo-warn); }
+  .overview-stat-valor.norte{ color:var(--azul); }
+  .overview-stat-valor.sur{ color:var(--azulclaro); }
+  .overview-stat-label{
+    font-size:9.5px;
+    color:var(--gristxt);
+    font-weight:600;
+    margin-top:3px;
+  }
+  .overview-chip{
+    font-size:10px;
+    font-weight:700;
+    text-align:center;
+    padding:4px 8px;
+    border-radius:10px;
+    margin-bottom:10px;
+    background:#FBE9E6;
+    color:var(--rojo-warn);
+  }
+  .overview-chip.neutral{
+    background:var(--gris);
+    color:var(--gristxt);
+  }
+  .overview-chart-box{
+    flex:1;
+    min-height:140px;
+  }
+  .overview-chart-box canvas{
+    max-height:140px;
+  }
+  @media (max-width:1100px){
+    .overview-grid{ grid-template-columns:repeat(2, 1fr); }
+  }
+  /* ---------- Explorador interactivo (filtros) ---------- */
+  .filtro-hint{
+    font-size:12px;
+    color:var(--gristxt);
+    margin:0 0 14px 0;
+  }
+  .filtro-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    align-items:flex-end;
+    margin-bottom:18px;
+    background:#FBFBFD;
+    border:1px solid var(--gris);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .filtro-item{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    min-width:170px;
+  }
+  .filtro-item label{
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--azul);
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  .filtro-item select{
+    padding:9px 10px;
+    border:1.5px solid #C4CBDA;
+    border-radius:8px;
+    font-family:'Montserrat',Arial,sans-serif;
+    font-size:12.5px;
+    color:#1B2233;
+    background:var(--blanco);
+    outline:none;
+  }
+  .filtro-item select:focus{
+    border-color:var(--azul);
+  }
+  .btn-filtro-reset{
+    background:var(--gris);
+    color:var(--gristxt);
+    border:none;
+    border-radius:8px;
+    padding:9px 16px;
+    font-family:'Montserrat',Arial,sans-serif;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    height:38px;
+  }
+  .btn-filtro-reset:hover{
+    background:#d5d9e2;
+  }
+  /* ---------- "Movilizado por año" — gráfico + tarjeta de insight ---------- */
+  .movilizado-header{
+    margin-bottom:14px;
+  }
+  .movilizado-header h3{
+    margin:0 0 4px 0;
+    font-size:18px;
+    font-weight:800;
+    color:var(--azul);
+  }
+  .movilizado-header p{
+    margin:0;
+    font-size:12px;
+    color:var(--gristxt);
+  }
+  .movilizado-header-row{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .total-badge{
+    background:var(--naranja);
+    color:var(--blanco);
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.3px;
+    padding:10px 16px;
+    border-radius:8px;
+    white-space:nowrap;
+  }
+  .movilizado-grid{
+    display:grid;
+    grid-template-columns:2.2fr 1fr;
+    gap:18px;
+    align-items:stretch;
+  }
+  .movilizado-chart{
+    display:flex;
+    flex-direction:column;
+  }
+  .movilizado-chart canvas{
+    flex:1;
+    max-height:340px;
+  }
+  .insight-card{
+    background:var(--azul);
+    border-radius:12px;
+    padding:18px 18px 0 18px;
+    color:var(--blanco);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .insight-card-label{
+    font-size:11px;
+    font-weight:800;
+    letter-spacing:.5px;
+    color:var(--naranja);
+    margin-bottom:8px;
+  }
+  .insight-card-stat{
+    font-size:38px;
+    font-weight:800;
+    line-height:1;
+    margin-bottom:10px;
+  }
+  .insight-card-desc{
+    font-size:12px;
+    color:#D7DEEC;
+    line-height:1.5;
+    margin-bottom:14px;
+  }
+  .insight-card-desc b{
+    color:var(--blanco);
+  }
+  .insight-card-art{
+    margin:auto -18px 0 -18px;
+    line-height:0;
+  }
+  .insight-card-art svg{
+    width:100%;
+    height:auto;
+    display:block;
+  }
+  @media (max-width:900px){
+    .movilizado-grid{ grid-template-columns:1fr; }
+  }
+  @media (max-width:1100px){
+    .upload-grid{grid-template-columns:repeat(2, 1fr);}
+    .chart-grid{grid-template-columns:1fr;}
+    .chart-grid.dos-col{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="lib-error-banner" id="libErrorBanner">
+  ⚠️ No se pudieron cargar las librerías necesarias (Chart.js / XLSX) desde internet. Verifica tu conexión o si un firewall/antivirus
+  está bloqueando cdnjs.cloudflare.com, cdn.jsdelivr.net o unpkg.com, y recarga la página.
+</div>
+
+<header class="banner">
+  <h1>HUACHIPATO TERMINAL PORTUARIO&nbsp;&nbsp;·&nbsp;&nbsp;TABLERO DE CONTROL DE GESTIÓN 2026</h1>
+  <p>Seguridad (HTP y Reloncaví) · CPPT (Convenio Provisión Puesto de Trabajo) · Cierres de puerto por mal tiempo · Naves Aceros Arequipa · Rates operacionales por producto</p>
+</header>
+
+<div class="wrap">
+
+  <!-- ================= BOTÓN PARA ABRIR PANEL DE CARGA (ventana aparte) ================= -->
+  <div class="update-bar">
+    <button type="button" class="btn-update" id="btnOpenUpload">
+      <span class="btn-ico">⇪</span> Actualizar datos del tablero
+    </button>
+    <span class="update-hint">Los archivos se cargan en una ventana aparte y no afectan la visualización mientras no los subas.</span>
+  </div>
+
+  <!-- ================= SECCIÓN 1: CPPT ================= -->
+  <section class="bloque">
+    <h2 class="titulo-seccion">1&nbsp;&nbsp;·&nbsp;&nbsp;CONVENIO PROVISIÓN PUESTO DE TRABAJO (CPPT) — cobertura y ahorro</h2>
+    <div class="kpi-alert-row">
+      <div class="kpi-alert ok">
+        <div class="kpi-alert-valor" id="valorAhorroTotal">—</div>
+        <div class="kpi-alert-etiqueta">Ahorro Total Acumulado CPPT</div>
+      </div>
+      <div class="kpi-alert warn">
+        <div class="kpi-alert-valor" id="valorObjetadosTotal">—</div>
+        <div class="kpi-alert-etiqueta">Turnos Objetados Total (lic. médica / no se presenta)</div>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-box"><div class="chart-title">Cobertura de turnos por mes</div><canvas id="chartCppt1"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Ahorro vs. Cobro CPPT por mes ($)</div><canvas id="chartCppt2"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Turnos objetados (lic. médica / no se presenta)</div><canvas id="chartCppt3"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ================= SECCIÓN 2: CIERRES DE PUERTO POR MAL TIEMPO ================= -->
+  <section class="bloque">
+    <h2 class="titulo-seccion">2&nbsp;&nbsp;·&nbsp;&nbsp;CIERRES DE PUERTO POR MAL TIEMPO — indisponibilidad operacional</h2>
+    <div class="kpi-alert-row">
+      <div class="kpi-alert">
+        <div class="kpi-alert-valor" id="valorIndisponibilidad">—</div>
+        <div class="kpi-alert-etiqueta">% Indisponibilidad del Puerto</div>
+      </div>
+      <div class="kpi-alert">
+        <div class="kpi-alert-valor" id="valorDiasDetencion">—</div>
+        <div class="kpi-alert-etiqueta">Días de Detención Equivalente</div>
+      </div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-box"><div class="chart-title">Cierres registrados vs. que afectaron operación</div><canvas id="chartCierre1"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Horas de afectación a la operación por mes</div><canvas id="chartCierre2"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Causas de los cierres registrados</div><canvas id="chartCierre3"></canvas></div>
+    </div>
+    <div class="nota-pie">
+      Fuente: Cierres de Puerto 2026 (KPI). % Indisponibilidad = horas de afectación ÷ horas disponibles del período.
+      Días de Detención Equivalente = horas totales de afectación ÷ 24.
+    </div>
+  </section>
+
+  <!-- ================= SECCIÓN 3: OCUPACIÓN DEL TERMINAL ================= -->
+  <section class="bloque">
+    <h2 class="titulo-seccion">3&nbsp;&nbsp;·&nbsp;&nbsp;OCUPACIÓN DEL TERMINAL MARÍTIMO — Sitio Norte y Sitio Sur</h2>
+    <div class="insight" id="insightOcupacion">Cargando indicador de ocupación…</div>
+    <div class="kpi-alert-row">
+      <div class="kpi-split-card">
+        <div class="kpi-split-title" id="tituloMes">Último Mes</div>
+        <div class="kpi-split-body">
+          <div class="kpi-split-half">
+            <div class="kpi-split-valor norte" id="valorNorteMes">—</div>
+            <div class="kpi-split-etiqueta">Sitio Norte</div>
+          </div>
+          <div class="kpi-split-divider"></div>
+          <div class="kpi-split-half">
+            <div class="kpi-split-valor sur" id="valorSurMes">—</div>
+            <div class="kpi-split-etiqueta">Sitio Sur</div>
+          </div>
+        </div>
+      </div>
+      <div class="kpi-split-card">
+        <div class="kpi-split-title" id="tituloAnual">Anual a la Fecha</div>
+        <div class="kpi-split-body">
+          <div class="kpi-split-half">
+            <div class="kpi-split-valor norte" id="valorNorteAnual">—</div>
+            <div class="kpi-split-etiqueta">Sitio Norte</div>
+          </div>
+          <div class="kpi-split-divider"></div>
+          <div class="kpi-split-half">
+            <div class="kpi-split-valor sur" id="valorSurAnual">—</div>
+            <div class="kpi-split-etiqueta">Sitio Sur</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-grid dos-col">
+      <div class="chart-box tall"><div class="chart-title">% de Ocupación Anual por Sitio (2022–2026)</div><canvas id="chartOcupAnual"></canvas></div>
+      <div class="chart-box tall"><div class="chart-title">% de Ocupación 2026 por Mes y Anual a la Fecha</div><canvas id="chartOcup2026"></canvas></div>
+    </div>
+    <div class="nota-pie">
+      % Ocupación = Horas utilizadas ÷ Horas disponibles del sitio, por mes/año. "Anual a la fecha" corresponde al acumulado 2026
+      hasta el último mes con datos cargados. Fuente: Libro4 (hoja "Ocupación Muelle").
+    </div>
+  </section>
+
+  <!-- ================= SECCIÓN 4: TONELAJE TOTAL TRANSFERIDO ================= -->
+  <section class="bloque">
+    <h2 class="titulo-seccion">4&nbsp;&nbsp;·&nbsp;&nbsp;TONELAJE TOTAL TRANSFERIDO — Terminal completo (todas las naves y productos)</h2>
+
+    <div class="movilizado-header">
+      <h3>Movilizado por año (2022–2026)</h3>
+      <p>Total de toneladas transferidas por año. *2026: datos a la fecha (año en curso)</p>
+    </div>
+
+    <div class="movilizado-grid">
+      <div class="chart-box tall movilizado-chart">
+        <div class="chart-title">Toneladas transferidas por año</div>
+        <canvas id="chartTonAnual"></canvas>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-label">INSIGHT CLAVE</div>
+        <div class="insight-card-stat" id="statTonelaje">—</div>
+        <div class="insight-card-desc" id="descTonelaje">Calculando variación…</div>
+        <div class="insight-card-art">
+          <svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="200" height="90" fill="#16294f"/>
+            <rect x="0" y="62" width="200" height="28" fill="#1c3660"/>
+            <path d="M0,62 Q50,50 100,60 T200,58 L200,90 L0,90 Z" fill="#22406e"/>
+            <rect x="40" y="30" width="70" height="26" rx="2" fill="#E8804A"/>
+            <rect x="46" y="24" width="14" height="8" fill="#c96a30"/>
+            <rect x="66" y="20" width="10" height="12" fill="#c96a30"/>
+            <circle cx="112" cy="56" r="5" fill="#0d1a33"/>
+            <circle cx="150" cy="56" r="5" fill="#0d1a33"/>
+            <rect x="108" y="38" width="46" height="16" rx="2" fill="#4A6FA5"/>
+            <rect x="150" y="42" width="20" height="12" fill="#4A6FA5"/>
+            <line x1="120" y1="38" x2="120" y2="14" stroke="#cbd6ea" stroke-width="2"/>
+            <line x1="120" y1="14" x2="140" y2="14" stroke="#cbd6ea" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-grid" style="grid-template-columns:1fr; margin-top:16px;">
+      <div class="chart-box"><div class="chart-title">Total Transferido 2026 por Mes (Tons)</div><canvas id="chartTonMes"></canvas></div>
+    </div>
+
+    <div class="movilizado-header" style="margin-top:26px;">
+      <div class="movilizado-header-row">
+        <div>
+          <h3>Movilizado por producto – 2026</h3>
+          <p>Toneladas transferidas por producto durante 2026 (datos a la fecha)</p>
+        </div>
+        <div class="total-badge" id="badgeTotalProducto">TOTAL 2026: — t</div>
+      </div>
+    </div>
+
+    <div class="movilizado-grid">
+      <div class="chart-box tall movilizado-chart">
+        <div class="chart-title">Toneladas por producto – 2026</div>
+        <canvas id="chartTonProducto"></canvas>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-label">INSIGHT CLAVE</div>
+        <div class="insight-card-stat" id="statProducto">—</div>
+        <div class="insight-card-desc" id="descProducto">Calculando concentración…</div>
+        <div class="insight-card-art">
+          <svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="200" height="90" fill="#16294f"/>
+            <rect x="0" y="62" width="200" height="28" fill="#1c3660"/>
+            <path d="M0,62 Q50,50 100,60 T200,58 L200,90 L0,90 Z" fill="#22406e"/>
+            <rect x="40" y="30" width="70" height="26" rx="2" fill="#E8804A"/>
+            <rect x="46" y="24" width="14" height="8" fill="#c96a30"/>
+            <rect x="66" y="20" width="10" height="12" fill="#c96a30"/>
+            <circle cx="112" cy="56" r="5" fill="#0d1a33"/>
+            <circle cx="150" cy="56" r="5" fill="#0d1a33"/>
+            <rect x="108" y="38" width="46" height="16" rx="2" fill="#4A6FA5"/>
+            <rect x="150" y="42" width="20" height="12" fill="#4A6FA5"/>
+            <line x1="120" y1="38" x2="120" y2="14" stroke="#cbd6ea" stroke-width="2"/>
+            <line x1="120" y1="14" x2="140" y2="14" stroke="#cbd6ea" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-grid" style="grid-template-columns:1fr; margin-top:16px;">
+      <div class="chart-box tall"><div class="chart-title">Toneladas por producto y mes – 2026</div><canvas id="chartTonProductoMes"></canvas></div>
+    </div>
+
+    <div class="nota-pie">
+      Total transferido = Toneladas embarcadas + Tonelaje descargado, sumadas para todas las naves y productos del terminal
+      (no solo Aceros Arequipa). Fuente: Estadística Operacional de Naves.
+    </div>
+  </section>
+
+  <!-- ================= SECCIÓN 5: EXPLORADOR INTERACTIVO POR NAVE ================= -->
+  <section class="bloque">
+    <h2 class="titulo-seccion">5&nbsp;&nbsp;·&nbsp;&nbsp;EXPLORADOR INTERACTIVO — Rate, Costo y Productividad por Nave</h2>
+    <p class="filtro-hint">Selecciona Producto → Cliente → Año → Mes para ver el Rate, Costo y Productividad de las naves que calzan con el filtro.</p>
+    <div class="filtro-row">
+      <div class="filtro-item">
+        <label for="filtroProducto">Producto</label>
+        <select id="filtroProducto"><option value="">Todos</option></select>
+      </div>
+      <div class="filtro-item">
+        <label for="filtroCliente">Cliente</label>
+        <select id="filtroCliente"><option value="">Todos</option></select>
+      </div>
+      <div class="filtro-item">
+        <label for="filtroAnio">Año</label>
+        <select id="filtroAnio"><option value="">Todos</option></select>
+      </div>
+      <div class="filtro-item">
+        <label for="filtroMes">Mes</label>
+        <select id="filtroMes"><option value="">Todo el año</option></select>
+      </div>
+      <button type="button" class="btn-filtro-reset" id="btnResetFiltros">Limpiar filtros</button>
+    </div>
+    <div class="insight" id="insightExplorador">Selecciona filtros para ver el detalle por nave…</div>
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+      <div class="chart-box tall"><div class="chart-title">Rate Contratado vs. Rate Alcanzado por nave (Tons/día)</div><canvas id="chartExpRate"></canvas></div>
+    </div>
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+      <div class="chart-box tall"><div class="chart-title">Costo USD/Ton — Programado vs. Logrado por nave</div><canvas id="chartExpCosto"></canvas></div>
+    </div>
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+      <div class="chart-box tall"><div class="chart-title">Productividad: Tons/Hora Bruto vs. Neto por nave</div><canvas id="chartExpTonsHr"></canvas></div>
+    </div>
+    <div class="nota-pie">
+      Fuente: Estadística Operacional de Naves (todas las recaladas 2025-2026). Rate = Rate Contratado vs. Rate Operacional (Tons/día).
+      Costo = USD/Ton Programado vs. Logrado (solo 8 de 310 recaladas del archivo traen este dato cargado — el gráfico puede salir
+      vacío para combinaciones de filtro sin costo registrado). Productividad = Tons/Hora Bruto vs. Neto, sustituyendo temporalmente
+      al indicador Persona/Tons porque el archivo fuente no trae columna de dotación; en cuanto se agregue esa columna se puede
+      calcular Persona/Tons directamente.
+    </div>
+  </section>
+
+  <!-- ================= SECCIÓN 6: KARVUNA — DETENCIONES Y COSTOS ================= -->
+  <section class="bloque">
+    <h2 class="titulo-seccion">6&nbsp;&nbsp;·&nbsp;&nbsp;KARVUNA — DETALLE DE DESCARGAS: RATE NETO, COSTOS Y DETENCIONES</h2>
+    <div class="insight" id="insightKarvunaDet">Cargando indicador de detenciones…</div>
+    <div class="kpi-alert-row">
+      <div class="kpi-alert info">
+        <div class="kpi-alert-valor" id="valorUsdTonProm">—</div>
+        <div class="kpi-alert-etiqueta">USD/Ton Promedio (8 descargas)</div>
+      </div>
+      <div class="kpi-alert">
+        <div class="kpi-alert-valor" id="valorDetTotal">—</div>
+        <div class="kpi-alert-etiqueta">Horas Totales de Detención</div>
+      </div>
+    </div>
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+      <div class="chart-box tall"><div class="chart-title">Rate Contratado vs. Rate Alcanzado por recalada (MT/día)</div><canvas id="chartKarvunaRate"></canvas></div>
+    </div>
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+      <div class="chart-box"><div class="chart-title">Costo USD/Tonelada por viaje</div><canvas id="chartKarvunaCosto"></canvas></div>
+    </div>
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+      <div class="chart-box tall"><div class="chart-title">Detenciones por tipo y por viaje (horas)</div><canvas id="chartKarvunaDetenciones"></canvas></div>
+    </div>
+    <div class="nota-pie">
+      Rate Contratado vs. Rate Alcanzado: fuente <b>Estadística Operacional de Naves</b> (columnas Rate Contratado y Rate Operacional,
+      recaladas de Karvuna · Caliza 2026). Algunas recaladas no tienen Rate Contratado registrado en la fuente (columna vacía) y
+      quedan sin esa barra en el gráfico.<br>
+      Costo USD/Tonelada y Detenciones por tipo: fuente <b>SOF Karvuna</b> — Resumen de Operaciones y Detenciones. Solo se incluyen
+      los 8 viajes de <b>descarga</b> de Caliza (se excluyen V.170, V.16 y V.22, cargas break-bulk/chatarra con ventanas operativas
+      muy cortas y no comparables). Rate Neto (SOF) = Toneladas ÷ Horas Netas (descontando detenciones dentro de la operación) × 24.
+    </div>
+  </section>
+
+
+  <div class="nota-pie" style="margin-top:-6px;">
+    Fuente: Dashboard Seguridad HTP/Reloncaví · Turnos CPPT 2026 · Cierres de Puerto 2026 (KPI) · Tabla Naves Aceros Arequipa · Estadística Operacional de Naves · Ocupación de Muelle · SOF Karvuna.
+    Cobertura ponderada = turnos efectivos ÷ turnos convenio. % indisponibilidad = horas de afectación ÷ horas disponibles.
+    Costo de transferencia = dotación + maquinaria (excluye porteo).
+  </div>
+
+</div>
+
+<!-- ================= VENTANA DE CLAVE DE ACCESO ================= -->
+<div class="modal-overlay" id="passwordOverlay">
+  <div class="modal-window password-window">
+    <div class="modal-header">
+      <h2>🔒 Acceso restringido</h2>
+      <button type="button" class="modal-close" id="btnClosePassword" aria-label="Cerrar">✕</button>
+    </div>
+    <p class="sub">Ingresa la clave de acceso para actualizar los datos del tablero.</p>
+    <form id="formPassword" autocomplete="off">
+      <input type="password" id="inputPassword" class="password-input" placeholder="Clave de acceso" autocomplete="off">
+      <div class="password-error" id="passwordError">Clave incorrecta. Intenta nuevamente.</div>
+      <button type="submit" class="btn-apply" style="margin-top:12px;">Ingresar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================= VENTANA APARTE: PANEL DE CARGA DE DATOS ================= -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h2>Actualizar datos del tablero</h2>
+      <button type="button" class="modal-close" id="btnCloseUpload" aria-label="Cerrar">✕</button>
+    </div>
+
+    <p class="sub">Arrastra o selecciona los archivos Excel originales para recalcular el tablero automáticamente. Si no cargas un archivo, se usan los últimos datos disponibles.</p>
+    <div class="upload-grid">
+
+      <label class="dropzone" id="dz-cppt">
+        <input type="file" id="file-cppt" accept=".xlsx,.xls,.csv">
+        <div class="ico">📋</div>
+        <div class="titulo">Turnos CPPT</div>
+        <div class="hint">Archivo "Resumen CPPT" / Grafico_Turnos_CPPT</div>
+        <div class="estado default" id="estado-cppt">Usando datos vigentes (jul-2026)</div>
+      </label>
+
+      <label class="dropzone" id="dz-cierres">
+        <input type="file" id="file-cierres" accept=".xlsx,.xls,.csv">
+        <div class="ico">🌊</div>
+        <div class="titulo">Cierres de Puerto</div>
+        <div class="hint">Archivo "Tablero KPI" + hojas mensuales (Ene…Dic)</div>
+        <div class="estado default" id="estado-cierres">Usando datos vigentes (ago-2026)</div>
+      </label>
+
+      <label class="dropzone" id="dz-naves">
+        <input type="file" id="file-naves" accept=".xlsx,.xls,.csv">
+        <div class="ico">🚢</div>
+        <div class="titulo">Naves Aceros Arequipa</div>
+        <div class="hint">Tabla con Nave / Cumplimiento / Costo / Ton-turno-hombre</div>
+        <div class="estado default" id="estado-naves">Usando datos vigentes</div>
+      </label>
+
+      <label class="dropzone" id="dz-rate">
+        <input type="file" id="file-rate" accept=".xlsx,.xls,.csv">
+        <div class="ico">📦</div>
+        <div class="titulo">Estadística Operacional de Naves</div>
+        <div class="hint">Rate/día por producto (Caliza · Soda) y tonelaje total — año 2026</div>
+        <div class="estado default" id="estado-rate">Usando datos vigentes (2026)</div>
+      </label>
+
+      <label class="dropzone" id="dz-seguridad">
+        <input type="file" id="file-seguridad" accept=".xlsx,.xls,.csv">
+        <div class="ico">🦺</div>
+        <div class="titulo">Seguridad (HTP / Reloncaví)</div>
+        <div class="hint">Accidentes con tiempo perdido y días perdidos</div>
+        <div class="estado default" id="estado-seguridad">Usando datos vigentes</div>
+      </label>
+
+      <label class="dropzone" id="dz-ocupacion">
+        <input type="file" id="file-ocupacion" accept=".xlsx,.xls,.csv">
+        <div class="ico">⚓</div>
+        <div class="titulo">Ocupación de Muelle</div>
+        <div class="hint">% Ocupación Sitio Norte / Sitio Sur por año y mes</div>
+        <div class="estado default" id="estado-ocupacion">Usando datos vigentes</div>
+      </label>
+
+      <label class="dropzone" id="dz-karvunadet">
+        <input type="file" id="file-karvunadet" accept=".xlsx,.xls,.csv">
+        <div class="ico">⏱️</div>
+        <div class="titulo">SOF Karvuna — Detenciones</div>
+        <div class="hint">Resumen de operaciones, detenciones y costo USD/Ton por viaje</div>
+        <div class="estado default" id="estado-karvunadet">Usando datos vigentes</div>
+      </label>
+
+    </div>
+    <button type="button" class="btn-apply" id="btnApplyClose">Listo, ver tablero</button>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   PALETA
+===================================================================== */
+const AZUL = '#1F3A6E', NARANJA = '#E8804A', AZULCLARO = '#4A6FA5',
+      GRIS = '#B9C2D6', VERDE = '#3E8E5A', ROJO='#C64B3C';
+const MESES_ORDEN = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_ABREV = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+if(typeof Chart !== 'undefined'){
+  Chart.defaults.font.family = "'Montserrat', Arial, sans-serif";
+  Chart.defaults.color = '#3A4257';
+  Chart.defaults.font.size = 10.5;
+  if(window.ChartDataLabels) Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels', { display:false });
+}
+
+/* =====================================================================
+   FORMATO CHILENO
+===================================================================== */
+const fmtInt   = n => Math.round(n).toLocaleString('es-CL');
+const fmtMoney = n => '$' + Math.round(n).toLocaleString('es-CL');
+const fmtPct   = n => (n*100).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%';
+const fmt1     = n => n.toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1});
+
+/* =====================================================================
+   DATOS POR DEFECTO (últimos archivos entregados)
+===================================================================== */
+let DATA = {
+  recaladas: [{"anio": 2025, "mes": null, "nave": "Arpeggio", "cliente": "HUACHIPATO", "producto": "coke", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Enero", "nave": "LINKEN", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15110.72, "rateContratado": 10000, "rateAlcanzado": 11227.78105208932, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 467.8242105037217, "tonsHrNeto": 467.8242105037217}, {"anio": 2025, "mes": "Enero", "nave": "BUNUM XCEL", "cliente": "HUACHIPATO", "producto": "Caliza Gllo.", "tons": 30025, "rateContratado": 9000, "rateAlcanzado": 9471.193866348021, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 394.63307776450085, "tonsHrNeto": 394.63307776450085}, {"anio": 2025, "mes": "Enero", "nave": "ELITE FAITH", "cliente": "ENAP", "producto": "Pet Coke", "tons": 6058.7, "rateContratado": 6000, "rateAlcanzado": 7653.0947365138645, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 318.87894735474435, "tonsHrNeto": 318.87894735474435}, {"anio": 2025, "mes": "Enero", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 23710.12, "rateContratado": 10000, "rateAlcanzado": 11979.85061032079, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 499.16044209669957, "tonsHrNeto": 499.16044209669957}, {"anio": 2025, "mes": "Febrero", "nave": "GINGA JAGUAR", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10095.15, "rateContratado": 10000, "rateAlcanzado": 11592.517895208215, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 483.02157896700896, "tonsHrNeto": 483.02157896700896}, {"anio": 2025, "mes": "Febrero", "nave": "BOCHEN LONDON", "cliente": "OXY", "producto": "Soda Caustica", "tons": 16021.55, "rateContratado": 10000, "rateAlcanzado": 10145.571292667193, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 422.7321371944664, "tonsHrNeto": 422.7321371944664}, {"anio": 2025, "mes": "Marzo", "nave": "ERNST OLDENDORFF", "cliente": "HUACHIPATO", "producto": "Pellets + Granza", "tons": 32465.18, "rateContratado": 6000, "rateAlcanzado": 9408.303320430703, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 392.01263835127935, "tonsHrNeto": 392.01263835127935}, {"anio": 2025, "mes": "Marzo", "nave": "QUELLONINA", "cliente": "ENAP", "producto": "Estructura ENAP", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Marzo", "nave": "QUELLONINA", "cliente": "ENAP", "producto": "Estructura ENAP", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Marzo", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 25012.99, "rateContratado": 10000, "rateAlcanzado": 11305.305762704429, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 471.0544067793512, "tonsHrNeto": 471.0544067793512}, {"anio": 2025, "mes": "Abril", "nave": "CENTINELA", "cliente": "NUTRISCO", "producto": "Inauguración", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Abril", "nave": "STAR THETIS", "cliente": "HUACHIPATO", "producto": "coke", "tons": 38510, "rateContratado": 3600, "rateAlcanzado": 4501.1688311462885, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 187.54870129776202, "tonsHrNeto": 187.54870129776202}, {"anio": 2025, "mes": "Abril", "nave": "CENTURION", "cliente": "HUACHIPATO", "producto": "Laminilla", "tons": 15869.8, "rateContratado": 6000, "rateAlcanzado": 8417.131491561122, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 350.7138121483801, "tonsHrNeto": 350.7138121483801}, {"anio": 2025, "mes": "Abril", "nave": "GINGA JAGUAR", "cliente": "OXY", "producto": "Soda Caustica", "tons": 11231.07, "rateContratado": 10000, "rateAlcanzado": 10447.50697677247, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 435.31279069885295, "tonsHrNeto": 435.31279069885295}, {"anio": 2025, "mes": "Abril", "nave": "AFRICAN PIPIT", "cliente": "ARAUCO", "producto": "Caliza Arauco", "tons": 27531.97, "rateContratado": 9000, "rateAlcanzado": 13647.516970800265, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 568.646540450011, "tonsHrNeto": 568.646540450011}, {"anio": 2025, "mes": "Mayo", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 25214.66, "rateContratado": 10000, "rateAlcanzado": 10767.827615522303, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 448.65948398009596, "tonsHrNeto": 448.65948398009596}, {"anio": 2025, "mes": "Mayo", "nave": "TOMINI SIROCCO", "cliente": "IANSA", "producto": "Carbón + Coque (Iansa)", "tons": 0, "rateContratado": 6000, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Mayo", "nave": "GEENWICH PARK", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15956.38, "rateContratado": 10000, "rateAlcanzado": 11004.398620656524, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 458.51660919402184, "tonsHrNeto": 458.51660919402184}, {"anio": 2025, "mes": "Mayo", "nave": "EPIC TRADER", "cliente": "HUACHIPATO", "producto": "coke", "tons": 38914.75, "rateContratado": 4500, "rateAlcanzado": 5886.264705896749, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 245.26102941236454, "tonsHrNeto": 245.26102941236454}, {"anio": 2025, "mes": "Junio", "nave": "BOW PRECISION", "cliente": "OXY", "producto": "Soda Caustica", "tons": 12325.5, "rateContratado": 10000, "rateAlcanzado": 13031.360352850623, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 542.9733480354427, "tonsHrNeto": 542.9733480354427}, {"anio": 2025, "mes": "Junio", "nave": "GINGA BOBCAT", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10734.3, "rateContratado": 10000, "rateAlcanzado": 10142.64755939447, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 422.6103149747696, "tonsHrNeto": 422.6103149747696}, {"anio": 2025, "mes": "Julio", "nave": "PAM  QUERELEMA", "cliente": "ALIMAR", "producto": "Carga General", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Julio", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 24991.64, "rateContratado": 10000, "rateAlcanzado": 8400.55025210495, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 126.60403748735776, "tonsHrNeto": 126.60403748735776}, {"anio": 2025, "mes": "Agosto", "nave": "BOW PERSISTENT", "cliente": "OXY", "producto": "Soda Caustica", "tons": 6908.19, "rateContratado": 10000, "rateAlcanzado": 10836.379607892608, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 451.51581699552537, "tonsHrNeto": 451.51581699552537}, {"anio": 2025, "mes": "Agosto", "nave": "GINGA GRUTTO", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10239.48, "rateContratado": 10000, "rateAlcanzado": 12165.72000093951, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 506.9050000391462, "tonsHrNeto": 506.9050000391462}, {"anio": 2025, "mes": "Agosto", "nave": "INDIAN WALKER", "cliente": "ARAUCO", "producto": "Caliza Arauco", "tons": 27516.59, "rateContratado": 6000, "rateAlcanzado": 6422.024246390885, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 267.58434359962024, "tonsHrNeto": 267.58434359962024}, {"anio": 2025, "mes": "Agosto", "nave": "NORD SINGAPORE", "cliente": "AZA", "producto": "Chatarra AZA", "tons": 20889.65, "rateContratado": 2500, "rateAlcanzado": 2742.123609829609, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 114.25515040956705, "tonsHrNeto": 114.25515040956705}, {"anio": 2025, "mes": "Septiembre", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 24375.82, "rateContratado": 10000, "rateAlcanzado": 11337.589767472555, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 472.3995736446898, "tonsHrNeto": 472.3995736446898}, {"anio": 2025, "mes": "Septiembre", "nave": "PAM VICHUQUEN II", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM VICHUQUEN II", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 12, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Pesca Fresca", "tons": 17.82, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON BORIS", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "XENA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 12997.78, "rateContratado": 10000, "rateAlcanzado": 11510.950848347513, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 479.6229520144797, "tonsHrNeto": 479.6229520144797}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ALFONSO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 10, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "OSLO BULK", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 4948.59, "rateContratado": 3000, "rateAlcanzado": 2778.1574736842103, "usdProgramado": 65.5, "usdLogrado": 7.26620695230396, "tonsHrBruto": 115.75656140350877, "tonsHrNeto": 115.75656140350877}, {"anio": 2025, "mes": "Noviembre", "nave": "GINGA BLUE SHARK", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10162.37, "rateContratado": 10000, "rateAlcanzado": 13400.932746129836, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 558.3721977554098, "tonsHrNeto": 558.3721977554098}, {"anio": 2025, "mes": "Noviembre", "nave": "BIANCA", "cliente": "HUACHIPATO", "producto": "coke", "tons": 27052.54, "rateContratado": 4500, "rateAlcanzado": 6110.691388141559, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 254.612141172565, "tonsHrNeto": 254.612141172565}, {"anio": 2025, "mes": "Noviembre", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 22735.6, "rateContratado": 10000, "rateAlcanzado": 12045.350993396056, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 501.88962472483564, "tonsHrNeto": 501.88962472483564}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM VICHUQUEN II", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 8, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON MANUEL", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM VICHUQUEN II", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "BARCAZA MELLINA II", "cliente": "Sin Cliente", "producto": "Defensa Muelle ENAP", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "BOCHEM WALVIS BAY", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15697.99, "rateContratado": 10000, "rateAlcanzado": 11922.522531390816, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 496.77177214128403, "tonsHrNeto": 496.77177214128403}, {"anio": 2025, "mes": "Diciembre", "nave": "BARCAZA MELLINA II", "cliente": "Sin Cliente", "producto": "Defensa Muelle ENAP", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM VESTERVEG", "cliente": "Sin Cliente", "producto": "Mov. Grúa PAM", "tons": 8, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM QUERELEMA", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PETREL", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15814.91, "rateContratado": 10000, "rateAlcanzado": 11935.784150969614, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 497.3243396237339, "tonsHrNeto": 497.3243396237339}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "BUNUN BENEFIT", "cliente": "ARAUCO", "producto": "Caliza Arauco", "tons": 27506.05, "rateContratado": 6000, "rateAlcanzado": 6823.206201550387, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 284.3002583979328, "tonsHrNeto": 284.3002583979328}, {"anio": 2026, "mes": "Enero", "nave": "CONDOR MAGALLANES", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5439.08, "rateContratado": 3000, "rateAlcanzado": 2700.7825655053152, "usdProgramado": 5.5, "usdLogrado": 5.1948164542801, "tonsHrBruto": 112.5326068960548, "tonsHrNeto": 112.5326068960548}, {"anio": 2026, "mes": "Enero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Sin Producto", "tons": 30.28, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Enero", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Chatarra LAMPA", "tons": 14008.53, "rateContratado": 3500, "rateAlcanzado": 3645.1541741497185, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 151.88142392290493, "tonsHrNeto": 151.88142392290493}, {"anio": 2026, "mes": "Enero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 14.71, "rateContratado": null, "rateAlcanzado": 114.46832434665416, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 4.769513514443923, "tonsHrNeto": 4.769513514443923}, {"anio": 2026, "mes": "Enero", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 25039.79, "rateContratado": 10000, "rateAlcanzado": 11775.735440822944, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 490.65564336762264, "tonsHrNeto": 490.65564336762264}, {"anio": 2026, "mes": "Enero", "nave": "PAM VENTISQUERO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 18, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Enero", "nave": "PAM VENTISQUERO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 18, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Enero", "nave": "ANTHEIA", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5398.04, "rateContratado": 3000, "rateAlcanzado": 3238.8222001319673, "usdProgramado": 5.5, "usdLogrado": 4.64943030731799, "tonsHrBruto": 134.95092500549862, "tonsHrNeto": 134.95092500549862}, {"anio": 2026, "mes": "Enero", "nave": "PAM QUERELEMA", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 36.15, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM CRISTOBAL COLON", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PHEASANT", "cliente": "OXY", "producto": "Soda Caustica", "tons": 14436.78, "rateContratado": 10000, "rateAlcanzado": 11140.921929539863, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 464.20508039749427, "tonsHrNeto": 464.20508039749427}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 42.18, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 30.53, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM QUERELEMA", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 17.2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 27.95, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "FORTE GALAXY", "cliente": "OXY", "producto": "Soda Caustica", "tons": 7176.39, "rateContratado": 10000, "rateAlcanzado": 11637.394053468208, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 484.89141889450866, "tonsHrNeto": 484.89141889450866}, {"anio": 2026, "mes": "Febrero", "nave": "PAM CORAL I", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM SAN JOSÉ", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON TITO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM CORAL I", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "DRACO FAITH", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 4663.43, "rateContratado": 3000, "rateAlcanzado": 3454.3940740777975, "usdProgramado": 5.5, "usdLogrado": 5.2045878168561, "tonsHrBruto": 143.93308641990822, "tonsHrNeto": 143.93308641990822}, {"anio": 2026, "mes": "Marzo", "nave": "PAM CORAL I", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Marzo", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 24652, "rateContratado": 10000, "rateAlcanzado": 12326, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 513.5833333333334, "tonsHrNeto": 513.5833333333334}, {"anio": 2026, "mes": "Marzo", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Carga General", "tons": 42.81, "rateContratado": null, "rateAlcanzado": 189.69895388216753, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 7.904123078423647, "tonsHrNeto": 7.904123078423647}, {"anio": 2026, "mes": "Marzo", "nave": "PAM DON TITO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Marzo", "nave": "JIU XU", "cliente": "ENAP", "producto": "Pet Coke", "tons": 11007.43, "rateContratado": 4000, "rateAlcanzado": 3787.5027956989247, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 157.8126164874552, "tonsHrNeto": 157.8126164874552}, {"anio": 2026, "mes": "Abril", "nave": "ROCIO", "cliente": "Sin Cliente", "producto": "Flexibles", "tons": 10, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "ROCIO", "cliente": "Sin Cliente", "producto": "Flexibles", "tons": 10, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19916.3, "rateContratado": 9000, "rateAlcanzado": 10116.215873015874, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 421.5089947089947, "tonsHrNeto": 421.5089947089947}, {"anio": 2026, "mes": "Abril", "nave": "ROCIO", "cliente": "Sin Cliente", "producto": "Flexibles", "tons": 12, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "ROCIO", "cliente": "Sin Cliente", "producto": "Flexibles", "tons": 12, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "MOCKINGBIRD", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15392, "rateContratado": 10000, "rateAlcanzado": 10554.514285960027, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 439.7714285816678, "tonsHrNeto": 439.7714285816678}, {"anio": 2026, "mes": "Abril", "nave": "DON MANUEL", "cliente": "Sin Cliente", "producto": "Mov. Redes", "tons": 10, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19232.62, "rateContratado": null, "rateAlcanzado": 10550.468023250178, "usdProgramado": null, "usdLogrado": 1350.5064243860559, "tonsHrBruto": 439.60283430209074, "tonsHrNeto": 439.60283430209074}, {"anio": 2026, "mes": "Abril", "nave": "PATAGONIA", "cliente": "ARAUCO", "producto": "Caliza Arauco", "tons": 27327.97, "rateContratado": 12000, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 3564.517825509615, "tonsHrNeto": 3564.517825509615}, {"anio": 2026, "mes": "Mayo", "nave": "CENA FAITH", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5317.23, "rateContratado": 3000, "rateAlcanzado": 3093.658181818182, "usdProgramado": 5.5, "usdLogrado": 5.07504533379724, "tonsHrBruto": 128.90242424242425, "tonsHrNeto": 128.90242424242425}, {"anio": 2026, "mes": "Mayo", "nave": "CAIFU CHAO", "cliente": "OXY", "producto": "Soda Caustica", "tons": 13489.6, "rateContratado": 10000, "rateAlcanzado": 10343.460191389371, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 430.9775079745571, "tonsHrNeto": 430.9775079745571}, {"anio": 2026, "mes": "Mayo", "nave": "RV METEOR", "cliente": "Sin Cliente", "producto": "Sin Carga", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Mayo", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19365.04, "rateContratado": 9000, "rateAlcanzado": 10808.394418399817, "usdProgramado": null, "usdLogrado": 1200.998480498553, "tonsHrBruto": 450.3497674333258, "tonsHrNeto": 450.3497674333258}, {"anio": 2026, "mes": "Mayo", "nave": "BOW PERFORMER", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10271.67, "rateContratado": 10000, "rateAlcanzado": 10718.26017315353, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 446.5941738813971, "tonsHrNeto": 446.5941738813971}, {"anio": 2026, "mes": "Mayo", "nave": "COMPAS MARS", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 15, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Mayo", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19374.2, "rateContratado": null, "rateAlcanzado": 9963.874285411872, "usdProgramado": null, "usdLogrado": 1227.6637486967204, "tonsHrBruto": 415.161428558828, "tonsHrNeto": 415.161428558828}, {"anio": 2026, "mes": "Mayo", "nave": "GOOFY (A)", "cliente": "HUACHIPATO", "producto": "Finos de Mineral", "tons": 19800.34, "rateContratado": 8000, "rateAlcanzado": 12369.843644582743, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 515.4101518576142, "tonsHrNeto": 515.4101518576142}, {"anio": 2026, "mes": "Mayo", "nave": "GINGA MAYA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 6105.25, "rateContratado": 10000, "rateAlcanzado": 10617.824347745473, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 442.409347822728, "tonsHrNeto": 442.409347822728}, {"anio": 2026, "mes": "Mayo", "nave": "GOOFY (B)", "cliente": "HUACHIPATO", "producto": "Finos de Mineral", "tons": 21552, "rateContratado": null, "rateAlcanzado": 5522.220640678065, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 230.0925266949194, "tonsHrNeto": 230.0925266949194}, {"anio": 2026, "mes": "Mayo", "nave": "ICELAND BULKER", "cliente": "A&B", "producto": "Barras y Rollos acero", "tons": 10272.84, "rateContratado": 3500, "rateAlcanzado": 1610.548677169843, "usdProgramado": 5.5, "usdLogrado": 9.2, "tonsHrBruto": 67.10619488207679, "tonsHrNeto": 67.10619488207679}, {"anio": 2026, "mes": "Junio", "nave": "BALSA 84", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5164.58, "rateContratado": 3000, "rateAlcanzado": 1980.5579761025706, "usdProgramado": 5.5, "usdLogrado": 4.22952987970508, "tonsHrBruto": 82.52324900427377, "tonsHrNeto": 82.52324900427377}, {"anio": 2026, "mes": "Junio", "nave": "GINGA GRUTTO", "cliente": "OXY", "producto": "Soda Caustica", "tons": 9181.42, "rateContratado": 10000, "rateAlcanzado": 10443.3213265936, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 435.13838860806663, "tonsHrNeto": 435.13838860806663}, {"anio": 2026, "mes": "Junio", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 15442.49, "rateContratado": 10000, "rateAlcanzado": 10084.888816326531, "usdProgramado": null, "usdLogrado": 1563.608981092811, "tonsHrBruto": 420.2037006802721, "tonsHrNeto": 420.2037006802721}, {"anio": 2026, "mes": "Junio", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Junio", "nave": "SHAMROCK MERCURY", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15004, "rateContratado": 10000, "rateAlcanzado": 11183.105589815481, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 465.9627329089784, "tonsHrNeto": 465.9627329089784}, {"anio": 2026, "mes": "Julio", "nave": "DRACO FAITH", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5801, "rateContratado": 3000, "rateAlcanzado": 3458.981366319565, "usdProgramado": 5.5, "usdLogrado": 4.84102396138597, "tonsHrBruto": 144.12422359664856, "tonsHrNeto": 144.12422359664856}, {"anio": 2026, "mes": "Julio", "nave": "SPARROWHAWK", "cliente": "OXY", "producto": "Soda Caustica", "tons": 5709.5, "rateContratado": 10000, "rateAlcanzado": 3954.6320346360208, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 164.77633477650085, "tonsHrNeto": 164.77633477650085}, {"anio": 2026, "mes": "Julio", "nave": "SPARROWHAWK", "cliente": "OXY", "producto": "Soda Caustica", "tons": 5709.5, "rateContratado": 10000, "rateAlcanzado": 9649.859154446995, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 402.07746476862474, "tonsHrNeto": 402.07746476862474}, {"anio": 2026, "mes": "Julio", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Pertrechos Guarello", "tons": 20, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Julio", "nave": "RUI YUAN", "cliente": "HUACHIPATO", "producto": "Plate Iron", "tons": 6163.99, "rateContratado": 3500, "rateAlcanzado": 3579.090967794018, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 149.12879032475075, "tonsHrNeto": 149.12879032475075}, {"anio": 2026, "mes": "Julio", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 18571.25, "rateContratado": 9000, "rateAlcanzado": 9279.181124164568, "usdProgramado": null, "usdLogrado": 1044.8570451638957, "tonsHrBruto": 386.63254684019034, "tonsHrNeto": 386.63254684019034}, {"anio": 2026, "mes": "Julio", "nave": "XENA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 3836.36, "rateContratado": 10000, "rateAlcanzado": 11093.094940708143, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 462.2122891961726, "tonsHrNeto": 462.2122891961726}, {"anio": 2026, "mes": "Julio", "nave": "BOW PERSISTENT", "cliente": "OXY", "producto": "Soda Caustica", "tons": 5775, "rateContratado": 10000, "rateAlcanzado": 11647.05882436118, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 485.2941176817158, "tonsHrNeto": 485.2941176817158}, {"anio": 2026, "mes": "Agosto", "nave": "GINGA PRETIGE", "cliente": "OXY", "producto": "Soda Caustica", "tons": 12000, "rateContratado": 10000, "rateAlcanzado": 13333.333333311775, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 555.5555555546573, "tonsHrNeto": 555.5555555546573}, {"anio": 2026, "mes": "Agosto", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 14726, "rateContratado": 9000, "rateAlcanzado": 9179.844155649851, "usdProgramado": null, "usdLogrado": 1308.070618751974, "tonsHrBruto": 382.4935064854105, "tonsHrNeto": 382.4935064854105}, {"anio": 2026, "mes": "Agosto", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 4966.22, "rateContratado": 9000, "rateAlcanzado": 11002.087386881436, "usdProgramado": null, "usdLogrado": 1308.070618751974, "tonsHrBruto": 458.42030778672654, "tonsHrNeto": 458.42030778672654}, {"anio": 2026, "mes": "Agosto", "nave": "MAPLE GRACE", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5429.31, "rateContratado": 3000, "rateAlcanzado": 3602.86009226834, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 150.11917051118084, "tonsHrNeto": 150.11917051118084}, {"anio": 2026, "mes": "Agosto", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19589.77, "rateContratado": 9000, "rateAlcanzado": 9727.335558648025, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 405.305648277001, "tonsHrNeto": 405.305648277001}, {"anio": 2026, "mes": "Agosto", "nave": "BOCHEM CALLAO", "cliente": "OXY", "producto": "Soda Caustica", "tons": 18022, "rateContratado": 10000, "rateAlcanzado": 11689.945945964337, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 487.08108108184734, "tonsHrNeto": 487.08108108184734}, {"anio": 2026, "mes": "Septiembre", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19623.23, "rateContratado": 10000, "rateAlcanzado": 10889.191213858177, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 453.716300577424, "tonsHrNeto": 453.716300577424}],
+
+  karvunaRates: {
+    viajes: [
+      {label:'Abr · Caliza (1)', rateBruto:10116.2, rateNeto:10116.2, contratado:9000},
+      {label:'Abr · Caliza (2)', rateBruto:10550.5, rateNeto:10550.5, contratado:null},
+      {label:'May · Caliza (1)', rateBruto:10808.4, rateNeto:10808.4, contratado:9000},
+      {label:'May · Caliza (2)', rateBruto:9963.9,  rateNeto:9963.9,  contratado:null},
+      {label:'Jun · Caliza',     rateBruto:10084.9, rateNeto:10084.9, contratado:10000},
+      {label:'Jul · Caliza',     rateBruto:9279.2,  rateNeto:9279.2,  contratado:9000},
+      {label:'Ago · Caliza (1)', rateBruto:9179.8,  rateNeto:9179.8,  contratado:9000},
+      {label:'Ago · Caliza (2)', rateBruto:11002.1, rateNeto:11002.1, contratado:9000},
+      {label:'Ago · Caliza (3)', rateBruto:9727.3,  rateNeto:9727.3,  contratado:9000},
+      {label:'Sep · Caliza',     rateBruto:10889.2, rateNeto:10889.2, contratado:10000}
+    ]
+  },
+  karvunaDetenciones: {
+    viajes: [
+      {viaje:'V.16B', tons:19916.29, rateBruto:10116.2, rateNeto:12265.6, usdTon:1.631,
+        mant:4.78, malTiempo:0, faltaCamiones:0, cambioBodega:3.33, cambioTurno:0, otras:3.92},
+      {viaje:'V.16C', tons:19232.624, rateBruto:10776.3, rateNeto:12327.5, usdTon:1.505,
+        mant:2.05, malTiempo:0, faltaCamiones:0, cambioBodega:3.93, cambioTurno:0, otras:4.91},
+      {viaje:'V.16D', tons:19365.04, rateBruto:10132.9, rateNeto:11365.2, usdTon:1.284,
+        mant:2.3, malTiempo:0, faltaCamiones:0, cambioBodega:3.89, cambioTurno:0, otras:2},
+      {viaje:'V.16E', tons:19374.23, rateBruto:10919.3, rateNeto:13122.7, usdTon:1.321,
+        mant:4.65, malTiempo:5.17, faltaCamiones:0, cambioBodega:7.96, cambioTurno:0, otras:0},
+      {viaje:'V.16F', tons:15442, rateBruto:9280.7, rateNeto:13689.0, usdTon:1.683,
+        mant:5.98, malTiempo:0, faltaCamiones:0, cambioBodega:7.56, cambioTurno:0, otras:3.45},
+      {viaje:'V.22A', tons:18317, rateBruto:9200.0, rateNeto:14574.3, usdTon:1.140,
+        mant:8.26, malTiempo:0, faltaCamiones:0, cambioBodega:3.6, cambioTurno:0, otras:10.86},
+      {viaje:'V.23', tons:19692.73, rateBruto:5865.1, rateNeto:11333.0, usdTon:1.408,
+        mant:11.88, malTiempo:60.08, faltaCamiones:0, cambioBodega:4.5, cambioTurno:0, otras:15.33},
+      {viaje:'V.24', tons:19589.773, rateBruto:5963.9, rateNeto:9748.2, usdTon:1.285,
+        mant:3.43, malTiempo:0, faltaCamiones:0, cambioBodega:6.17, cambioTurno:0, otras:23.67}
+    ]
+  },
+  acerosAB: {
+    nombres: ['ICELAND BULKER'],
+    rateLogrado: [1611],
+    rateContratado: [3500],
+    costoProgramado: [5.5],
+    costoLogrado: [9.2],
+    tonsHr: [67.1],
+    tonsTotales: [10272.84]
+  },
+  tonelaje: {
+    anual: [
+      {anio:2022, total:2291235, aLaFecha:false},
+      {anio:2023, total:2291157, aLaFecha:false},
+      {anio:2024, total:1329364, aLaFecha:false},
+      {anio:2025, total:606778.9, aLaFecha:false},
+      {anio:2026, total:510394.95, aLaFecha:true}
+    ],
+    porProducto2026: [
+      {producto:'Caliza', total:198135.1},
+      {producto:'Soda Cáustica', total:191801.3},
+      {producto:'Productos de Acero', total:53649.5},
+      {producto:'Granza / Finos', total:41352.3},
+      {producto:'Chatarra', total:14008.5},
+      {producto:'Carbón y Coque', total:11007.4},
+      {producto:'Carga General / Proyecto', total:440.8}
+    ],
+    mensual2026: [
+      {mes:'Enero', total:49973.4},
+      {mes:'Febrero', total:26484.6},
+      {mes:'Marzo', total:35711.2},
+      {mes:'Abril', total:81922.9},
+      {mes:'Mayo', total:125563.2},
+      {mes:'Junio', total:44796.5},
+      {mes:'Julio', total:51586.6},
+      {mes:'Agosto', total:74733.3},
+      {mes:'Septiembre', total:19623.2}
+    ],
+    porProductoMes2026: [
+      {mes:'Enero',      Caliza:0,     'Soda Cáustica':25039.8, 'Productos de Acero':10837.1, 'Granza / Finos':0,     Chatarra:14008.5, 'Carbón y Coque':0,     'Carga General / Proyecto':88.0},
+      {mes:'Febrero',    Caliza:0,     'Soda Cáustica':21613.2, 'Productos de Acero':4663.4,  'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':208.0},
+      {mes:'Marzo',      Caliza:0,     'Soda Cáustica':24652.0, 'Productos de Acero':0,       'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':11007.4,'Carga General / Proyecto':51.8},
+      {mes:'Abril',      Caliza:66476.9,'Soda Cáustica':15392.0,'Productos de Acero':0,       'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':54.0},
+      {mes:'Mayo',       Caliza:38739.2,'Soda Cáustica':29866.5,'Productos de Acero':15590.1, 'Granza / Finos':41352.3,Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':15.0},
+      {mes:'Junio',      Caliza:15442.5,'Soda Cáustica':24185.4,'Productos de Acero':5164.6,  'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':4.0},
+      {mes:'Julio',      Caliza:18571.2,'Soda Cáustica':21030.4,'Productos de Acero':11965.0, 'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':20.0},
+      {mes:'Agosto',     Caliza:39282.0,'Soda Cáustica':30022.0,'Productos de Acero':5429.3,  'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':0},
+      {mes:'Septiembre', Caliza:19623.2,'Soda Cáustica':0,      'Productos de Acero':0,       'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':0}
+    ]
+  },
+  ocupacion: {
+    anual: [
+      {anio:2022, norte:64.72012362637362, sur:33.77270299145299, aLaFecha:false},
+      {anio:2023, norte:62.39392551892552, sur:16.137248168498168, aLaFecha:false},
+      {anio:2024, norte:30.232496194824964, sur:18.511415525114156, aLaFecha:false},
+      {anio:2025, norte:14.83589920343137, sur:15.860906862745098, aLaFecha:false},
+      {anio:2026, norte:16.464619252873565, sur:21.907327586206897, aLaFecha:true}
+    ],
+    mensual2026: [
+      {mes:'Enero', norte:9.24731182795699, sur:33.93817204301075},
+      {mes:'Febrero', norte:0, sur:29.791666666666668},
+      {mes:'Marzo', norte:12.692652329749105, sur:7.844982078853047},
+      {mes:'Abril', norte:24.34722222222222, sur:14.715277777777779},
+      {mes:'Mayo', norte:43.0152329749104, sur:36.19175627240143},
+      {mes:'Junio', norte:9.233796296296296, sur:9.625},
+      {mes:'Julio', norte:9.101851851851851, sur:24.893518518518515},
+      {mes:'Agosto', norte:16.9578853046595, sur:11.422491039426523},
+      {mes:'Anual a la fecha', norte:16.464619252873565, sur:21.907327586206897, destacado:true}
+    ]
+  },
+  seguridad: {
+    meses: ['Enero','Febrero','Marzo','Abril','Mayo','Junio'],
+    htp: {
+      responsable: 'Juan Sanhueza',
+      metaAccidentes: 0,
+      metaDiasPerdidos: 0,
+      accidentesAnio: {2021:1, 2022:1},
+      accidentesMes: [0,0,1,0,0,0],
+      diasPerdidosAnio: {2021:19, 2022:44},
+      diasPerdidosMes: [0,0,30,14,0,0],
+      cumpleAccidentes: 'NO CUMPLE',
+      cumpleDiasPerdidos: null
+    },
+    reloncavi: {
+      responsable: null,
+      metaAccidentes: 0,
+      metaDiasPerdidos: 0,
+      accidentesAnio: {2021:0, 2022:0},
+      accidentesMes: [0,0,0,0,0,0],
+      diasPerdidosAnio: {2021:0, 2022:0},
+      diasPerdidosMes: [0,0,0,0,0,0],
+      cumpleAccidentes: 'CUMPLE',
+      cumpleDiasPerdidos: 'CUMPLE'
+    }
+  },
+  cppt: {
+    meses: ['Febrero','Marzo','Abril','Mayo','Junio','Julio'],
+    turnosCubrir:   [320,320,320,320,320,320],
+    turnosEfectivos:[218,281,523,895,301,441],
+    pctCobertura:   [0.68125,0.878125,1.634375,2.796875,0.940625,1.378125],
+    objetados:      [82,35,0,0,83,4],
+    ahorro:         [6826336,2913680,0,0,7085046,341448],
+    cobro:          [3329920,4245648,0,0,170724,0],
+    totalAhorro: 17166510,
+    totalCobro: 7746292,
+    coberturaPonderada: 1.3848958333333334
+  },
+  cierres: {
+    meses: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
+    registrados: [0,0,6,1,2,0,2,4,0,0,0,0],
+    afectaronOp: [0,0,1,0,2,0,2,3,0,0,0,0],
+    hrsAfectacion:[0,0,15.5,0,57.566667,0,191.4,103.666667,0,0,0,0],
+    causas: {'Mal Tiempo':9,'Cerrazón de Niebla':4,'Altura de Ola / Viento':2},
+    totalRegistrados: 15,
+    totalAfectaron: 8,
+    totalHrs: 368.133333,
+    pctIndisponibilidad: 0.042024353120140315,
+    diasDetencion: 15.338888888851216
+  },
+  naves: {
+    nombres: ['OSLO BULK','CONDOR MAGALLANES','ANTHEIA','DRACO FAITH V1','CENA FAITH','BALSA 84','DRACO FAITH V2','MAPLE GRACE'],
+    cumplimiento: [0.926,1.102,1.159333,1.175667,1.054667,0.660333,1.191,1.176333],
+    costoTransf:  [7.266207,5.194816,4.64943,5.204588,5.075045,4.22953,4.841024,4.99514],
+    tonTurnoHombre:[26.042105,28.328521,32.464313,31.721088,31.094883,35.30137,32.227778,28.87766],
+    tonsTotales:  [4948,5439.076,5389.076,4663,5317.225,5154,5801,5429],
+    dotacion:     [190,192,166,147,171,146,180,188],
+    rateLogrado:  [2778,3306,3478,3527,3164,1981,3573,3529],
+    rateContratado:[3000,3000,3000,3000,3000,3000,3000,3000],
+    tonsTransferidas: 42140,
+    costoPromedio: 5.07
+  },
+  rate: {
+    caliza: [
+      {nave:'KARVUNA', logrado:10160.1, contratado:9250}
+    ],
+    soda: [
+      {nave:'GINGA PRETIGE',     logrado:13333.3, contratado:10000},
+      {nave:'MARITIME GISELA',   logrado:12050.9, contratado:10000},
+      {nave:'BOCHEM CALLAO',     logrado:11689.9, contratado:10000},
+      {nave:'BOW PERSISTENT',    logrado:11647.1, contratado:10000},
+      {nave:'FORTE GALAXY',      logrado:11637.4, contratado:10000},
+      {nave:'SHAMROCK MERCURY',  logrado:11183.1, contratado:10000},
+      {nave:'PHEASANT',          logrado:11140.9, contratado:10000},
+      {nave:'XENA',              logrado:11093.1, contratado:10000},
+      {nave:'BOW PERFORMER',     logrado:10718.3, contratado:10000},
+      {nave:'GINGA MAYA',        logrado:10617.8, contratado:10000},
+      {nave:'MOCKINGBIRD',       logrado:10554.5, contratado:10000},
+      {nave:'GINGA GRUTTO',      logrado:10443.3, contratado:10000},
+      {nave:'CAIFU CHAO',        logrado:10343.5, contratado:10000},
+      {nave:'SPARROWHAWK',       logrado:6802.2,  contratado:10000}
+    ],
+    karvuna: [
+      {label:'Abr · Caliza (1)',  logrado:10116.2, contratado:9000, caliza:true},
+      {label:'Abr · Caliza (2)',  logrado:10550.5, contratado:9000, caliza:true},
+      {label:'May · Caliza (1)',  logrado:10808.4, contratado:9000, caliza:true},
+      {label:'May · Caliza (2)',  logrado:9963.9,  contratado:9000, caliza:true},
+      {label:'Jun · Caliza',      logrado:10084.9, contratado:9000, caliza:true},
+      {label:'Jul · Caliza',      logrado:9279.2,  contratado:9000, caliza:true},
+      {label:'Ago · Caliza (1)',  logrado:9179.8,  contratado:9000, caliza:true},
+      {label:'Ago · Caliza (2)',  logrado:11002.1, contratado:9000, caliza:true},
+      {label:'Ago · Caliza (3)',  logrado:9727.3,  contratado:9000, caliza:true}
+    ]
+  }
+};
+
+let charts = {};
+
+/* =====================================================================
+   HELPERS DE GRÁFICOS
+===================================================================== */
+function destroy(id){ if(charts[id]){ charts[id].destroy(); } }
+
+const dlBase = {
+  anchor:'end', align:'end', offset:2, color:'#3A4257',
+  font:{size:8.5, weight:'600', family:"'Montserrat', Arial, sans-serif"},
+  rotation:-45
+};
+
+function labelFmt(fn){ return (value, context) => (value==null ? '' : fn(value)); }
+
+/* Barras agrupadas (2 series) + línea opcional en eje secundario, con etiquetas de dato */
+function barLine(id, labels, barDatasets, lineDataset, fmt=fmtInt){
+  destroy(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  const datasets = barDatasets.map((d,i)=>({
+    type:'bar',
+    borderRadius:2,
+    datalabels: { ...dlBase, display:true, formatter: labelFmt(fmt) },
+    ...d
+  }));
+  if(lineDataset) datasets.push({type:'line', datalabels:{display:false}, pointRadius:3, borderWidth:2, ...lineDataset});
+  charts[id] = new Chart(ctx, {
+    data:{labels, datasets},
+    options:{
+      responsive:true,
+      layout:{padding:{top:14}},
+      plugins:{
+        legend:{display: datasets.length>1, position:'bottom', labels:{boxWidth:10, font:{size:9.5}}}
+      },
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}}},
+        ...(lineDataset && lineDataset.yAxisID==='y1' ? {y1:{position:'right', beginAtZero:true, grid:{drawOnChartArea:false}, ticks:{font:{size:9}}}} : {}),
+        x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45, minRotation:0}}
+      }
+    }
+  });
+}
+
+/* Torta (pie) para causas, con etiqueta "Causa; N; %" */
+function pieChart(id, labels, values, colors){
+  destroy(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  const total = values.reduce((a,b)=>a+b,0);
+  charts[id] = new Chart(ctx, {
+    type:'pie',
+    data:{labels, datasets:[{data:values, backgroundColor:colors, borderWidth:2, borderColor:'#fff'}]},
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'bottom', labels:{boxWidth:10,font:{size:9.5}}},
+        datalabels:{
+          display:true,
+          color:'#fff',
+          font:{size:9, weight:'700'},
+          formatter:(v,ctx)=>{
+            const pct = total? (v/total*100).toFixed(0):0;
+            return ctx.chart.data.labels[ctx.dataIndex] + '\n' + v + ' · ' + pct + '%';
+          }
+        }
+      }
+    }
+  });
+}
+
+/* Barra vertical "logrado" + línea punteada roja "contratado", con etiquetas de dato — formato real del Excel */
+function rateChart(id, labels, logrado, contratado, barColor, fmt=fmtInt){
+  destroy(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    data:{
+      labels,
+      datasets:[
+        {
+          type:'bar', label:'Rate logrado (Tons/día)', data:logrado,
+          backgroundColor:barColor, borderRadius:2,
+          datalabels:{...dlBase, display:true, formatter: labelFmt(fmt)}
+        },
+        {
+          type:'line', label:'Rate contratado (Tons/día)', data:contratado,
+          borderColor:ROJO, backgroundColor:ROJO, borderDash:[6,4],
+          borderWidth:2, pointRadius:3, pointBackgroundColor:ROJO, spanGaps:true,
+          datalabels:{display:false}
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      layout:{padding:{top:16}},
+      plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:9.5}}}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}}},
+        x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45, minRotation:0}}
+      }
+    }
+  });
+}
+
+/* Barra vertical simple con etiquetas (una sola serie) */
+function singleBar(id, labels, values, color, fmt=fmtInt){
+  destroy(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{
+      label:'', data:values, backgroundColor:color, borderRadius:2,
+      datalabels:{...dlBase, display:true, formatter: labelFmt(fmt)}
+    }]},
+    options:{
+      responsive:true,
+      layout:{padding:{top:14}},
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}}},
+        x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45, minRotation:0}}
+      }
+    }
+  });
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 1 · SEGURIDAD
+===================================================================== */
+function sum2022(anioObj){ return anioObj && anioObj[2022] != null ? anioObj[2022] : 0; }
+
+function chipClass(status){
+  if(!status) return 'neutral';
+  return status.toUpperCase().includes('NO') ? 'warn' : 'ok';
+}
+
+function renderSeguridad(){
+  const d = DATA.seguridad;
+  const h = d.htp, r = d.reloncavi;
+
+  const totalAccHTP = sum2022(h.accidentesAnio);
+  const totalDiasHTP = sum2022(h.diasPerdidosAnio);
+  const totalAccRel = sum2022(r.accidentesAnio);
+  const totalDiasRel = sum2022(r.diasPerdidosAnio);
+
+  document.getElementById('insightSeguridad').innerHTML =
+    `<b>INSIGHT SEGURIDAD ·</b> Meta = 0 accidentes y 0 días perdidos en ambos terminales (tolerancia cero). ` +
+    `HTP registra ${fmtInt(totalAccHTP)} accidente(s) con tiempo perdido y ${fmtInt(totalDiasHTP)} día(s) perdido(s) acumulados en 2022` +
+    (h.cumpleAccidentes ? ` (${h.cumpleAccidentes})` : '') + `. ` +
+    `Reloncaví registra ${fmtInt(totalAccRel)} accidente(s) y ${fmtInt(totalDiasRel)} día(s) perdido(s)` +
+    (r.cumpleAccidentes ? ` (${r.cumpleAccidentes})` : '') + `.`;
+
+  const miniCards = [
+    {terminal:'HTP', valor:fmtInt(totalAccHTP), etiqueta:'Accidentes con tiempo perdido (2022)', status:h.cumpleAccidentes},
+    {terminal:'HTP', valor:fmtInt(totalDiasHTP), etiqueta:'Días perdidos acumulados (2022)', status:h.cumpleDiasPerdidos},
+    {terminal:'RELONCAVÍ', valor:fmtInt(totalAccRel), etiqueta:'Accidentes con tiempo perdido (2022)', status:r.cumpleAccidentes},
+    {terminal:'RELONCAVÍ', valor:fmtInt(totalDiasRel), etiqueta:'Días perdidos acumulados (2022)', status:r.cumpleDiasPerdidos}
+  ];
+  document.getElementById('kpiMiniSeguridad').innerHTML = miniCards.map(c=>{
+    const cls = chipClass(c.status);
+    return `<div class="kpi-mini-card ${cls}">
+      <div class="terminal">${c.terminal}</div>
+      <div class="valor">${c.valor}</div>
+      <div class="etiqueta">${c.etiqueta}</div>
+      ${c.status ? `<div class="status-chip ${cls}">${c.status}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  barLine('chartSegAccidentes', d.meses,
+    [
+      {label:'HTP', data:h.accidentesMes, backgroundColor:AZUL},
+      {label:'Reloncaví', data:r.accidentesMes, backgroundColor:AZULCLARO}
+    ],
+    {label:'Meta', data:d.meses.map(()=>Math.max(h.metaAccidentes, r.metaAccidentes)), borderColor:ROJO, backgroundColor:ROJO, borderDash:[6,4], pointRadius:0, tension:0}
+  );
+  barLine('chartSegDias', d.meses,
+    [
+      {label:'HTP', data:h.diasPerdidosMes, backgroundColor:AZUL},
+      {label:'Reloncaví', data:r.diasPerdidosMes, backgroundColor:AZULCLARO}
+    ],
+    {label:'Meta', data:d.meses.map(()=>Math.max(h.metaDiasPerdidos, r.metaDiasPerdidos)), borderColor:ROJO, backgroundColor:ROJO, borderDash:[6,4], pointRadius:0, tension:0}
+  );
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 2 · CPPT
+===================================================================== */
+function renderCppt(){
+  const d = DATA.cppt;
+  document.getElementById('valorAhorroTotal').textContent = fmtMoney(d.totalAhorro);
+  document.getElementById('valorObjetadosTotal').textContent = fmtInt(d.objetados.reduce((a,b)=>a+b,0));
+  barLine('chartCppt1', d.meses,
+    [
+      {label:'Turnos a cubrir', data:d.turnosCubrir, backgroundColor:AZUL},
+      {label:'Turnos efectivos', data:d.turnosEfectivos, backgroundColor:NARANJA}
+    ],
+    {label:'% Cobertura', data:d.pctCobertura.map(v=>v*100), borderColor:AZULCLARO, backgroundColor:AZULCLARO, yAxisID:'y1', tension:.3},
+    fmtInt
+  );
+  barLine('chartCppt2', d.meses,
+    [
+      {label:'Ahorro ($)', data:d.ahorro, backgroundColor:VERDE},
+      {label:'Cobro CPPT ($)', data:d.cobro, backgroundColor:NARANJA}
+    ],
+    null,
+    n => n>=1000 ? (n/1000000).toLocaleString('es-CL',{maximumFractionDigits:1})+'M' : fmtInt(n)
+  );
+  singleBar('chartCppt3', d.meses, d.objetados, NARANJA, fmtInt);
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 3 · CIERRES
+===================================================================== */
+function renderCierres(){
+  const d = DATA.cierres;
+  document.getElementById('valorIndisponibilidad').textContent = fmtPct(d.pctIndisponibilidad);
+  document.getElementById('valorDiasDetencion').textContent = fmt1(d.diasDetencion);
+  barLine('chartCierre1', d.meses,
+    [
+      {label:'Cierres registrados', data:d.registrados, backgroundColor:AZUL},
+      {label:'Afectaron operación', data:d.afectaronOp, backgroundColor:NARANJA}
+    ]
+  );
+  singleBar('chartCierre2', d.meses, d.hrsAfectacion.map(v=>Math.round(v*10)/10), ROJO, v=>fmt1(v));
+  const labels = Object.keys(d.causas);
+  const values = Object.values(d.causas);
+  pieChart('chartCierre3', labels, values, [AZUL, NARANJA, AZULCLARO, GRIS]);
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 4 · NAVES ACEROS AREQUIPA
+===================================================================== */
+function renderNaves(){
+  const d = DATA.naves;
+  rateChart('chartNave1', d.nombres, d.rateLogrado, d.rateContratado, VERDE, fmtInt);
+  singleBar('chartNave2', d.nombres, d.costoTransf.map(v=>Math.round(v*100)/100), NARANJA, v=>'$'+fmt1(v));
+  singleBar('chartNave3', d.nombres, d.tonTurnoHombre.map(v=>Math.round(v*10)/10), AZUL, v=>fmt1(v));
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 5 · RATE POR PRODUCTO 2026
+===================================================================== */
+function avg(arr){ return arr.reduce((a,b)=>a+b,0)/arr.length; }
+
+function renderRate(){
+  const caliza = DATA.rate.caliza;
+  const soda = DATA.rate.soda;
+  rateChart('chartRateSoda', soda.map(i=>i.nave), soda.map(i=>Math.round(i.logrado)), soda.map(i=>i.contratado||null), AZULCLARO, fmtInt);
+
+  const avgCalizaLog = avg(caliza.map(i=>i.logrado));
+  const avgCalizaCon = avg(caliza.map(i=>i.contratado));
+  const avgSodaLog = avg(soda.map(i=>i.logrado));
+  const avgSodaCon = avg(soda.map(i=>i.contratado));
+  const cumplCaliza = avgCalizaLog/avgCalizaCon;
+  const cumplSoda = avgSodaLog/avgSodaCon;
+
+  document.getElementById('insightRate').innerHTML =
+    `<b>INSIGHT 2026 ·</b> Caliza: ${fmt1(avgCalizaLog)} Tons/día logrado vs. ${fmt1(avgCalizaCon)} contratado ` +
+    `(cumplimiento ${fmtPct(cumplCaliza)}, ${caliza.length} nave${caliza.length>1?'s':''}). ` +
+    `Soda Cáustica: ${fmt1(avgSodaLog)} Tons/día logrado vs. ${fmt1(avgSodaCon)} contratado ` +
+    `(cumplimiento ${fmtPct(cumplSoda)}, ${soda.length} naves).`;
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 6 · OCUPACIÓN DEL TERMINAL
+===================================================================== */
+function renderOcupacion(){
+  const d = DATA.ocupacion;
+  const anual = d.anual;
+  const mensual = d.mensual2026;
+
+  const labelsAnual = anual.map(a => a.aLaFecha ? a.anio+' (a la fecha)' : String(a.anio));
+  barLine('chartOcupAnual', labelsAnual,
+    [
+      {label:'Sitio Norte', data:anual.map(a=>Math.round(a.norte*10)/10), backgroundColor:AZUL},
+      {label:'Sitio Sur', data:anual.map(a=>Math.round(a.sur*10)/10), backgroundColor:AZULCLARO}
+    ],
+    null,
+    v => fmt1(v)+'%'
+  );
+
+  const labelsMes = mensual.map(m=>m.mes);
+  barLine('chartOcup2026', labelsMes,
+    [
+      {label:'Sitio Norte', data:mensual.map(m=>Math.round(m.norte*10)/10), backgroundColor: mensual.map(m=> m.destacado ? NARANJA : AZUL)},
+      {label:'Sitio Sur', data:mensual.map(m=>Math.round(m.sur*10)/10), backgroundColor: mensual.map(m=> m.destacado ? '#c96a30' : AZULCLARO)}
+    ],
+    null,
+    v => fmt1(v)+'%'
+  );
+
+  const ultimo = anual[anual.length-1];
+  const anioAnterior = anual.length>1 ? anual[anual.length-2] : null;
+  const mejorMesNorte = mensual.slice(0,-1).reduce((best,m)=> m.norte>best.norte?m:best, mensual[0]);
+  const mejorMesSur = mensual.slice(0,-1).reduce((best,m)=> m.sur>best.sur?m:best, mensual[0]);
+
+  // Tarjetas: último mes con datos (excluye la fila "Anual a la fecha") y año actual
+  const mesesReales = mensual.filter(m=>!m.destacado);
+  const ultimoMes = mesesReales[mesesReales.length-1];
+  if(ultimoMes){
+    document.getElementById('valorNorteMes').textContent = fmt1(ultimoMes.norte)+'%';
+    document.getElementById('valorSurMes').textContent = fmt1(ultimoMes.sur)+'%';
+    document.getElementById('tituloMes').textContent = ultimoMes.mes;
+  }
+  document.getElementById('valorNorteAnual').textContent = fmt1(ultimo.norte)+'%';
+  document.getElementById('valorSurAnual').textContent = fmt1(ultimo.sur)+'%';
+  document.getElementById('tituloAnual').textContent = `${ultimo.anio}`;
+
+  document.getElementById('insightOcupacion').innerHTML =
+    `<b>INSIGHT OCUPACIÓN ·</b> ${ultimo.anio} (a la fecha): Sitio Norte ${fmt1(ultimo.norte)}% · Sitio Sur ${fmt1(ultimo.sur)}% de ocupación. ` +
+    (anioAnterior ? `Respecto a ${anioAnterior.anio} (Norte ${fmt1(anioAnterior.norte)}% · Sur ${fmt1(anioAnterior.sur)}%), ` +
+      `Norte ${ultimo.norte>=anioAnterior.norte?'sube':'baja'} y Sur ${ultimo.sur>=anioAnterior.sur?'sube':'baja'}. ` : '') +
+    `Mes de mayor ocupación 2026: Norte en ${mejorMesNorte.mes} (${fmt1(mejorMesNorte.norte)}%), Sur en ${mejorMesSur.mes} (${fmt1(mejorMesSur.sur)}%).`;
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 7 · TONELAJE TOTAL TRANSFERIDO
+===================================================================== */
+function renderTonelaje(){
+  const d = DATA.tonelaje;
+  const anual = d.anual;
+  const mensual = d.mensual2026;
+
+  const labelsAnual = anual.map(a => String(a.anio));
+  destroy('chartTonAnual');
+  const ctxAnual = document.getElementById('chartTonAnual').getContext('2d');
+  charts['chartTonAnual'] = new Chart(ctxAnual, {
+    type:'bar',
+    data:{
+      labels: labelsAnual,
+      datasets:[{
+        data: anual.map(a=>Math.round(a.total)),
+        backgroundColor: AZUL,
+        borderRadius:2,
+        datalabels:{
+          display:true, anchor:'end', align:'end', offset:2,
+          color:'#1B2233', font:{size:11, weight:'700'},
+          formatter: v => fmtInt(v)
+        }
+      }]
+    },
+    options:{
+      responsive:true,
+      layout:{padding:{top:22}},
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}, callback:v=>fmtInt(v)}},
+        x:{ticks:{font:{size:11, weight:'600'}}}
+      }
+    }
+  });
+
+  const labelsMes = mensual.map(m=>m.mes);
+  barLine('chartTonMes', labelsMes,
+    [{label:'Total transferido (Tons)', data:mensual.map(m=>Math.round(m.total)), backgroundColor:NARANJA}],
+    null,
+    fmtInt
+  );
+
+  // Insight clave: variación entre el primer año y el último año COMPLETO (excluye el año en curso "a la fecha")
+  const aniosCompletos = anual.filter(a=>!a.aLaFecha);
+  const primero = aniosCompletos[0] || anual[0];
+  const ultimoCompleto = aniosCompletos[aniosCompletos.length-1] || anual[anual.length-1];
+  const variacion = primero.total ? ((ultimoCompleto.total - primero.total) / primero.total) * 100 : 0;
+  const signo = variacion>=0 ? '+' : '';
+
+  document.getElementById('statTonelaje').textContent = signo+Math.round(variacion)+'%';
+  document.getElementById('descTonelaje').innerHTML =
+    `El volumen transferido ${variacion<0?'cayó':'subió'} cerca de <b>${Math.abs(Math.round(variacion))}%</b> entre ${primero.anio} y ${ultimoCompleto.anio} (último año completo).`;
+
+  /* --- Movilizado por producto - 2026 --- */
+  const productos = d.porProducto2026.slice().sort((a,b)=>b.total-a.total);
+  const totalProducto = productos.reduce((a,p)=>a+p.total,0);
+  document.getElementById('badgeTotalProducto').textContent = `TOTAL 2026: ${fmtInt(totalProducto)} t`;
+
+  const coloresProducto = [AZUL, AZULCLARO, '#16294f', '#F0A876', '#8B3A2A', NARANJA, '#E8E8EC'];
+  destroy('chartTonProducto');
+  const ctxProd = document.getElementById('chartTonProducto').getContext('2d');
+  charts['chartTonProducto'] = new Chart(ctxProd, {
+    type:'bar',
+    data:{
+      labels: productos.map(p=>p.producto),
+      datasets:[{
+        data: productos.map(p=>Math.round(p.total)),
+        backgroundColor: productos.map((_,i)=>coloresProducto[i % coloresProducto.length]),
+        borderRadius:2,
+        datalabels:{
+          display:true, anchor:'end', align:'end', offset:2,
+          color:'#1B2233', font:{size:10.5, weight:'700'},
+          formatter: v => fmtInt(v)
+        }
+      }]
+    },
+    options:{
+      responsive:true,
+      layout:{padding:{top:22}},
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}, callback:v=>fmtInt(v)}},
+        x:{ticks:{font:{size:9.5}, autoSkip:false, maxRotation:30, minRotation:0}}
+      }
+    }
+  });
+
+  const top2 = productos.slice(0,2).reduce((a,p)=>a+p.total,0);
+  const pctTop2 = totalProducto ? Math.round((top2/totalProducto)*100) : 0;
+  document.getElementById('statProducto').textContent = pctTop2+'%';
+  document.getElementById('descProducto').innerHTML =
+    `<b>${productos[0].producto}</b> y <b>${productos[1].producto}</b> concentran cerca del <b>${pctTop2}%</b> del total transferido en 2026.`;
+
+  /* --- Toneladas por producto y mes (barras apiladas) --- */
+  const porProdMes = d.porProductoMes2026 || [];
+  if(porProdMes.length){
+    const categorias = ['Caliza','Soda Cáustica','Productos de Acero','Granza / Finos','Chatarra','Carbón y Coque','Carga General / Proyecto'];
+    const coloresCat = {
+      'Caliza':AZUL, 'Soda Cáustica':AZULCLARO, 'Productos de Acero':'#16294f',
+      'Granza / Finos':'#F0A876', 'Chatarra':'#8B3A2A', 'Carbón y Coque':NARANJA,
+      'Carga General / Proyecto':'#E8E8EC'
+    };
+    destroy('chartTonProductoMes');
+    const ctxPM = document.getElementById('chartTonProductoMes').getContext('2d');
+    charts['chartTonProductoMes'] = new Chart(ctxPM, {
+      type:'bar',
+      data:{
+        labels: porProdMes.map(m=>m.mes),
+        datasets: categorias.map(cat=>({
+          label: cat,
+          data: porProdMes.map(m=>Math.round((m[cat]||0)*10)/10),
+          backgroundColor: coloresCat[cat],
+          stack:'ton'
+        }))
+      },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{position:'bottom', labels:{boxWidth:10,font:{size:9}}},
+          datalabels:{display:false}
+        },
+        scales:{
+          y:{beginAtZero:true, stacked:true, ticks:{font:{size:9}, callback:v=>fmtInt(v)}},
+          x:{stacked:true, ticks:{font:{size:9.5}}}
+        }
+      }
+    });
+  }
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 8 · NAVES ACEROS A&B
+===================================================================== */
+function renderAcerosAB(){
+  const d = DATA.acerosAB;
+  if(!d.nombres.length){
+    document.getElementById('insightAcerosAB').innerHTML = '<b>SIN DATOS ·</b> No se encontraron recaladas del cliente "A&B" en el año seleccionado.';
+    return;
+  }
+  rateChart('chartAB1', d.nombres, d.rateLogrado, d.rateContratado, AZUL, fmtInt);
+  barLine('chartAB2', d.nombres,
+    [
+      {label:'USD/Ton Programado', data:d.costoProgramado, backgroundColor:AZULCLARO},
+      {label:'USD/Ton Logrado', data:d.costoLogrado, backgroundColor:NARANJA}
+    ],
+    null,
+    v => '$'+fmt1(v)
+  );
+  singleBar('chartAB3', d.nombres, d.tonsHr.map(v=>Math.round(v*10)/10), AZUL, fmt1);
+
+  const cumplimiento = avg(d.rateLogrado.map((v,i)=>v/d.rateContratado[i]));
+  const totalTons = d.tonsTotales.reduce((a,b)=>a+b,0);
+  document.getElementById('insightAcerosAB').innerHTML =
+    `<b>INSIGHT ACEROS A&B ·</b> ${d.nombres.length} nave${d.nombres.length>1?'s':''} registrada${d.nombres.length>1?'s':''} en 2026, ` +
+    `${fmtInt(totalTons)} Tons transferidas. Cumplimiento de rate promedio: ${fmtPct(cumplimiento)}` +
+    (d.nombres.length===1 ? ' (muestra de una sola recalada — el gráfico se ampliará automáticamente si cargas más naves de este cliente).' : '.');
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 9 · KARVUNA — DETENCIONES Y COSTOS
+===================================================================== */
+function renderKarvunaDetenciones(){
+  // --- Gráfico 1: Rate Contratado vs. Rate Alcanzado — fuente: Estadística Operacional de Naves ---
+  const ratesViajes = DATA.karvunaRates.viajes;
+  const ratesLabels = ratesViajes.map(v=>v.label);
+
+  destroy('chartKarvunaRate');
+  const ctxR = document.getElementById('chartKarvunaRate').getContext('2d');
+  charts['chartKarvunaRate'] = new Chart(ctxR, {
+    data:{
+      labels: ratesLabels,
+      datasets:[
+        {
+          type:'bar', label:'Rate Contratado (MT/día)', data: ratesViajes.map(v=>v.contratado!=null?Math.round(v.contratado):null),
+          backgroundColor: AZULCLARO, borderRadius:2,
+          datalabels:{...dlBase, display:true, formatter: labelFmt(fmtInt)}
+        },
+        {
+          type:'bar', label:'Rate Alcanzado (MT/día)', data: ratesViajes.map(v=>Math.round(v.rateNeto)),
+          backgroundColor: AZUL, borderRadius:2,
+          datalabels:{...dlBase, display:true, formatter: labelFmt(fmtInt)}
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      layout:{padding:{top:16}},
+      plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:9.5}}}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}}},
+        x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45, minRotation:0}}
+      }
+    }
+  });
+
+  const rateNetoProm = avg(ratesViajes.map(v=>v.rateNeto));
+  const rateBrutoProm = avg(ratesViajes.map(v=>v.rateBruto));
+  const contratadoProm = avg(ratesViajes.filter(v=>v.contratado!=null).map(v=>v.contratado));
+  const cumplNetoNaves = rateNetoProm/contratadoProm;
+
+  // --- Gráficos 2 y 3: Costo USD/Ton y Detenciones — fuente: SOF Karvuna ---
+  const viajes = DATA.karvunaDetenciones.viajes;
+  const labels = viajes.map(v=>v.viaje);
+
+  // Gráfico 2: Costo USD/Tonelada
+  singleBar('chartKarvunaCosto', labels, viajes.map(v=>Math.round(v.usdTon*1000)/1000), NARANJA, v=>'$'+v.toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2}));
+
+  // Gráfico 3: Detenciones por tipo (stacked)
+  destroy('chartKarvunaDetenciones');
+  const ctxD = document.getElementById('chartKarvunaDetenciones').getContext('2d');
+  const tiposDet = [
+    {key:'mant', label:'Mantención / Falla de equipos', color:AZUL},
+    {key:'malTiempo', label:'Mal Tiempo', color:ROJO},
+    {key:'faltaCamiones', label:'Falta de Camiones', color:NARANJA},
+    {key:'cambioBodega', label:'Cambio de Bodega', color:AZULCLARO},
+    {key:'cambioTurno', label:'Cambio de Turno', color:GRIS},
+    {key:'otras', label:'Otras Detenciones', color:'#8B3A2A'}
+  ];
+  charts['chartKarvunaDetenciones'] = new Chart(ctxD, {
+    type:'bar',
+    data:{
+      labels,
+      datasets: tiposDet.map(t=>({
+        label:t.label,
+        data: viajes.map(v=>Math.round(v[t.key]*100)/100),
+        backgroundColor:t.color,
+        stack:'det'
+      }))
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:9}}}, datalabels:{display:false}},
+      scales:{
+        y:{beginAtZero:true, stacked:true, ticks:{font:{size:9}}, title:{display:true, text:'Horas', font:{size:10}}},
+        x:{stacked:true, ticks:{font:{size:9}}}
+      }
+    }
+  });
+
+  // Insight + KPIs
+  const conCosto = viajes.filter(v=>v.usdTon>0);
+  const usdTonProm = avg(conCosto.map(v=>v.usdTon));
+  const detTotal = viajes.reduce((a,v)=>a+v.mant+v.malTiempo+v.faltaCamiones+v.cambioBodega+v.cambioTurno+v.otras,0);
+  const viajeMasDetenido = viajes.reduce((best,v)=>{
+    const tot = v.mant+v.malTiempo+v.faltaCamiones+v.cambioBodega+v.cambioTurno+v.otras;
+    const totBest = best.mant+best.malTiempo+best.faltaCamiones+best.cambioBodega+best.cambioTurno+best.otras;
+    return tot>totBest ? v : best;
+  }, viajes[0]);
+
+  document.getElementById('valorUsdTonProm').textContent = '$'+usdTonProm.toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('valorDetTotal').textContent = fmt1(detTotal)+' h';
+
+  document.getElementById('insightKarvunaDet').innerHTML =
+    `<b>INSIGHT KARVUNA ·</b> En las ${ratesViajes.length} recaladas de Caliza (Estadística Operacional de Naves), el Rate Alcanzado promedio (${fmtInt(rateNetoProm)} MT/día) ` +
+    `supera el Rate Contratado promedio (${fmtInt(contratadoProm)} MT/día) en ${fmtPct(cumplNetoNaves-1)}. ` +
+    `Según el detalle SOF, el viaje ${viajeMasDetenido.viaje} tuvo la mayor cantidad de horas detenidas, lo que explica su bajo Rate Bruto (${fmtInt(viajeMasDetenido.rateBruto)} MT/día) ` +
+    `pese a un Rate Neto normal (${fmtInt(viajeMasDetenido.rateNeto)} MT/día) en esa fuente.`;
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 2 · VISIÓN GENERAL (4 COLUMNAS)
+===================================================================== */
+function miniBarChart(id, labels, datasets){
+  destroy(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display: datasets.length>1, position:'bottom', labels:{boxWidth:8, font:{size:8}}}, datalabels:{display:false} },
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:7.5}}},
+        x:{ticks:{font:{size:7.5}}}
+      }
+    }
+  });
+}
+
+function renderOverview(){
+  // --- Columna 1: Seguridad ---
+  const dSeg = DATA.seguridad;
+  const h = dSeg.htp, r = dSeg.reloncavi;
+  const accTotal = sum2022(h.accidentesAnio) + sum2022(r.accidentesAnio);
+  const diasTotal = sum2022(h.diasPerdidosAnio) + sum2022(r.diasPerdidosAnio);
+  document.getElementById('ovSegAcc').textContent = fmtInt(accTotal);
+  document.getElementById('ovSegDias').textContent = fmtInt(diasTotal);
+  const segChip = document.getElementById('ovSegChip');
+  const noCumple = (h.cumpleAccidentes&&h.cumpleAccidentes.toUpperCase().includes('NO')) || (r.cumpleAccidentes&&r.cumpleAccidentes.toUpperCase().includes('NO'));
+  segChip.textContent = noCumple ? 'HTP: NO CUMPLE meta' : 'Ambos terminales cumplen';
+  segChip.className = 'overview-chip' + (noCumple ? '' : ' neutral');
+
+  // --- Columna 2: Cierres de Puerto (mal tiempo) ---
+  const dMa = DATA.cierres;
+  document.getElementById('ovMaIndisp').textContent = fmtPct(dMa.pctIndisponibilidad);
+  document.getElementById('ovMaCierres').textContent = fmtInt(dMa.totalRegistrados);
+  const causaTop = Object.entries(dMa.causas).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('ovMaChip').textContent = causaTop ? `Principal causa: ${causaTop[0]}` : '—';
+  const mesesConDatosMa = dMa.meses.map((m,i)=>({m,i})).filter(x=> dMa.registrados[x.i]>0 || dMa.afectaronOp[x.i]>0);
+  const labelsMa = mesesConDatosMa.length ? mesesConDatosMa.map(x=>x.m.slice(0,3)) : dMa.meses.map(m=>m.slice(0,3));
+  const idxMa = mesesConDatosMa.length ? mesesConDatosMa.map(x=>x.i) : dMa.meses.map((m,i)=>i);
+  miniBarChart('chartOvMedioAmbiente', labelsMa, [
+    {label:'Cierres', data: idxMa.map(i=>dMa.registrados[i]), backgroundColor:AZUL},
+    {label:'Afectaron', data: idxMa.map(i=>dMa.afectaronOp[i]), backgroundColor:NARANJA}
+  ]);
+
+  // --- Columna 3: Transferencia ---
+  const dTon = DATA.tonelaje;
+  const anualTon = dTon.anual;
+  const ultimoTon = anualTon[anualTon.length-1];
+  const primerTon = anualTon[0];
+  const varTon = primerTon.total ? ((ultimoTon.total - primerTon.total)/primerTon.total*100) : 0;
+  document.getElementById('ovTonTotal').textContent = fmtInt(ultimoTon.total);
+  document.getElementById('ovTonVar').textContent = (varTon>=0?'+':'')+Math.round(varTon)+'%';
+  document.getElementById('ovTonChip').textContent = `${ultimoTon.anio}${ultimoTon.aLaFecha?' (a la fecha)':''}`;
+
+  // --- Columna 4: % Ocupación Muelle ---
+  const dOcup = DATA.ocupacion;
+  const ultimoOcup = dOcup.anual[dOcup.anual.length-1];
+  document.getElementById('ovOcupNorte').textContent = fmt1(ultimoOcup.norte)+'%';
+  document.getElementById('ovOcupSur').textContent = fmt1(ultimoOcup.sur)+'%';
+  document.getElementById('ovOcupChip').textContent = `${ultimoOcup.anio}${ultimoOcup.aLaFecha?' (a la fecha)':''}`;
+  miniBarChart('chartOvOcupacion', dOcup.anual.map(a=>String(a.anio).slice(2)), [
+    {label:'Norte', data: dOcup.anual.map(a=>Math.round(a.norte*10)/10), backgroundColor:AZUL},
+    {label:'Sur', data: dOcup.anual.map(a=>Math.round(a.sur*10)/10), backgroundColor:AZULCLARO}
+  ]);
+}
+
+/* =====================================================================
+   RENDER SECCIÓN 3 · EXPLORADOR INTERACTIVO POR NAVE
+===================================================================== */
+function poblarSelect(id, valores, placeholder){
+  const sel = document.getElementById(id);
+  const actual = sel.value;
+  sel.innerHTML = `<option value="">${placeholder}</option>` + valores.map(v=>`<option value="${String(v)}">${v}</option>`).join('');
+  if(valores.map(String).includes(actual)) sel.value = actual;
+}
+
+function actualizarFiltrosCascada(){
+  const pProd = document.getElementById('filtroProducto').value;
+  let base = DATA.recaladas;
+  if(pProd) base = base.filter(r=>r.producto===pProd);
+  const clientes = [...new Set(base.map(r=>r.cliente))].sort();
+  poblarSelect('filtroCliente', clientes, 'Todos');
+
+  const pCli = document.getElementById('filtroCliente').value;
+  let base2 = base;
+  if(pCli) base2 = base2.filter(r=>r.cliente===pCli);
+  const anios = [...new Set(base2.map(r=>r.anio))].sort();
+  poblarSelect('filtroAnio', anios, 'Todos');
+
+  const pAnio = document.getElementById('filtroAnio').value;
+  let base3 = base2;
+  if(pAnio) base3 = base3.filter(r=>String(r.anio)===String(pAnio));
+  const mesesPresentes = MESES_ORDEN.filter(m=>base3.some(r=>r.mes===m));
+  poblarSelect('filtroMes', mesesPresentes, 'Todo el año');
+}
+
+function inicializarFiltros(){
+  const productos = [...new Set(DATA.recaladas.map(r=>r.producto))].sort();
+  poblarSelect('filtroProducto', productos, 'Todos');
+  actualizarFiltrosCascada();
+}
+
+function obtenerFilasFiltradas(){
+  const prod = document.getElementById('filtroProducto').value;
+  const cli = document.getElementById('filtroCliente').value;
+  const anio = document.getElementById('filtroAnio').value;
+  const mes = document.getElementById('filtroMes').value;
+  return DATA.recaladas.filter(r=>
+    (!prod || r.producto===prod) &&
+    (!cli || r.cliente===cli) &&
+    (!anio || String(r.anio)===String(anio)) &&
+    (!mes || r.mes===mes)
+  );
+}
+
+function avgOrNull(arr){
+  const v = arr.filter(x=>x!=null && isFinite(x));
+  return v.length ? avg(v) : null;
+}
+
+function grupoNaveChart(id, items, campoA, campoB, labelA, labelB, colorA, colorB, fmt){
+  destroy(id);
+  if(!items.length) return false;
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    data:{
+      labels: items.map(i=>i.nave),
+      datasets:[
+        {type:'bar', label:labelA, data:items.map(i=>i[campoA]!=null?Math.round(i[campoA]*100)/100:null), backgroundColor:colorA, borderRadius:2, datalabels:{...dlBase, display:true, formatter: labelFmt(fmt)}},
+        {type:'bar', label:labelB, data:items.map(i=>i[campoB]!=null?Math.round(i[campoB]*100)/100:null), backgroundColor:colorB, borderRadius:2, datalabels:{...dlBase, display:true, formatter: labelFmt(fmt)}}
+      ]
+    },
+    options:{
+      responsive:true,
+      layout:{padding:{top:16}},
+      plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:9.5}}}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}}},
+        x:{ticks:{font:{size:9}, autoSkip:false, maxRotation:45, minRotation:0}}
+      }
+    }
+  });
+  return true;
+}
+
+function renderExplorador(){
+  const filas = obtenerFilasFiltradas();
+  const porNave = {};
+  filas.forEach(r=>{
+    if(!porNave[r.nave]) porNave[r.nave] = [];
+    porNave[r.nave].push(r);
+  });
+  const naves = Object.keys(porNave).sort();
+  const resumen = naves.map(n=>{
+    const rs = porNave[n];
+    return {
+      nave:n,
+      rateContratado: avgOrNull(rs.map(r=>r.rateContratado)),
+      rateAlcanzado: avgOrNull(rs.map(r=>r.rateAlcanzado)),
+      usdProgramado: avgOrNull(rs.map(r=>r.usdProgramado)),
+      usdLogrado: avgOrNull(rs.map(r=>r.usdLogrado)),
+      tonsHrBruto: avgOrNull(rs.map(r=>r.tonsHrBruto)),
+      tonsHrNeto: avgOrNull(rs.map(r=>r.tonsHrNeto)),
+      tons: rs.reduce((a,r)=>a+(r.tons||0),0)
+    };
+  });
+
+  const conRate = resumen.filter(r=>r.rateContratado!=null || r.rateAlcanzado!=null);
+  const tieneRate = grupoNaveChart('chartExpRate', conRate, 'rateContratado','rateAlcanzado','Rate Contratado (Tons/día)','Rate Alcanzado (Tons/día)', AZULCLARO, AZUL, fmtInt);
+
+  const conCosto = resumen.filter(r=>r.usdProgramado!=null || r.usdLogrado!=null);
+  const tieneCosto = grupoNaveChart('chartExpCosto', conCosto, 'usdProgramado','usdLogrado','USD/Ton Programado','USD/Ton Logrado', AZULCLARO, NARANJA, v=>'$'+fmt1(v));
+
+  const conTonsHr = resumen.filter(r=>r.tonsHrBruto!=null || r.tonsHrNeto!=null);
+  const tieneTonsHr = grupoNaveChart('chartExpTonsHr', conTonsHr, 'tonsHrBruto','tonsHrNeto','Tons/Hora Bruto','Tons/Hora Neto', AZULCLARO, VERDE, v=>fmt1(v));
+
+  const totalTons = filas.reduce((a,r)=>a+(r.tons||0),0);
+  const partes = [];
+  partes.push(`<b>${naves.length}</b> nave${naves.length!==1?'s':''} encontrada${naves.length!==1?'s':''} · <b>${fmtInt(totalTons)}</b> Tons en el filtro actual.`);
+  if(naves.length && !tieneCosto) partes.push('Sin datos de costo (USD/Ton) para esta combinación de filtros.');
+  if(naves.length && !tieneRate) partes.push('Sin datos de rate para esta combinación de filtros.');
+  document.getElementById('insightExplorador').innerHTML = naves.length
+    ? partes.join(' ')
+    : 'No se encontraron recaladas para esta combinación de filtros.';
+}
+
+
+function renderAll(){
+  renderCppt();
+  renderCierres();
+  renderOcupacion();
+  renderTonelaje();
+  renderExplorador();
+  renderKarvunaDetenciones();
+}
+
+if(typeof Chart === 'undefined'){
+  document.getElementById('libErrorBanner').classList.add('show');
+} else {
+  inicializarFiltros();
+  renderAll();
+}
+
+/* =====================================================================
+   CARGA DE ARCHIVOS — PARSERS
+===================================================================== */
+function readWorkbook(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = e => {
+      try{
+        const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+        resolve(wb);
+      }catch(err){ reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function sheetToMatrix(ws){
+  // Fuerza que la matriz siempre comience en la columna A (índice 0) y fila 1, sin importar dónde
+  // empiecen realmente los datos de la hoja — evita que un archivo cuyo contenido parte en la columna B
+  // (u otra) desplace todas las columnas y rompa los índices fijos usados en los parsers.
+  let range;
+  if(ws['!ref']){
+    const r = XLSX.utils.decode_range(ws['!ref']);
+    r.s.c = 0; r.s.r = 0;
+    range = XLSX.utils.encode_range(r);
+  }
+  return XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null, range});
+}
+
+function findHeaderRow(matrix, mustContain){
+  // mustContain: array of lowercase substrings that must all appear somewhere in the row
+  for(let r=0; r<matrix.length; r++){
+    const row = matrix[r].map(c => (c==null? '' : String(c).toLowerCase()));
+    const joined = row.join(' | ');
+    if(mustContain.every(k => joined.includes(k))) return r;
+  }
+  return -1;
+}
+
+function colIndexByHeader(headerRow, needle){
+  for(let c=0;c<headerRow.length;c++){
+    const v = headerRow[c];
+    if(v!=null && String(v).toLowerCase().includes(needle)) return c;
+  }
+  return -1;
+}
+
+/* ---------- Parser 1: Turnos CPPT ---------- */
+function parseCppt(wb){
+  let sheetName = wb.SheetNames.find(n=>n.toLowerCase().includes('cppt')) || wb.SheetNames[0];
+  const matrix = sheetToMatrix(wb.Sheets[sheetName]);
+  const hRow = findHeaderRow(matrix, ['mes','cobertura']);
+  if(hRow===-1) throw new Error('No se encontró la tabla de turnos CPPT (encabezado con "Mes" y "% Cobertura").');
+  const header = matrix[hRow];
+  const cMes = colIndexByHeader(header,'mes');
+  const cCubrir = colIndexByHeader(header,'a cubrir');
+  const cEfectivos = colIndexByHeader(header,'efectivos');
+  const cObjetados = colIndexByHeader(header,'objetad');
+  const cCobertura = colIndexByHeader(header,'cobertura');
+  const cCobro = colIndexByHeader(header,'cobro');
+  const cAhorro = colIndexByHeader(header,'ahorro');
+
+  const meses=[],turnosCubrir=[],turnosEfectivos=[],pctCobertura=[],objetados=[],ahorro=[],cobro=[];
+  for(let r=hRow+1; r<matrix.length; r++){
+    const row = matrix[r];
+    const mes = row[cMes];
+    if(mes==null || String(mes).trim()==='') continue;
+    if(String(mes).toUpperCase().includes('TOTAL')) break;
+    meses.push(mes);
+    turnosCubrir.push(Number(row[cCubrir])||0);
+    turnosEfectivos.push(Number(row[cEfectivos])||0);
+    pctCobertura.push(Number(row[cCobertura])||0);
+    objetados.push(cObjetados>-1 ? Number(row[cObjetados])||0 : 0);
+    ahorro.push(cAhorro>-1 ? Number(row[cAhorro])||0 : 0);
+    cobro.push(cCobro>-1 ? Number(row[cCobro])||0 : 0);
+  }
+  const totalAhorro = ahorro.reduce((a,b)=>a+b,0);
+  const totalCobro = cobro.reduce((a,b)=>a+b,0);
+  const coberturaPonderada = avg(pctCobertura);
+  return {meses,turnosCubrir,turnosEfectivos,pctCobertura,objetados,ahorro,cobro,totalAhorro,totalCobro,coberturaPonderada};
+}
+
+/* ---------- Parser 2: Cierres de Puerto ---------- */
+
+function parseCierres(wb){
+  let sheetName = wb.SheetNames.find(n=>n.toLowerCase().includes('tablero')) || wb.SheetNames[0];
+  const matrix = sheetToMatrix(wb.Sheets[sheetName]);
+  const hRow = findHeaderRow(matrix, ['mes','cierres reg']);
+  if(hRow===-1) throw new Error('No se encontró el resumen mensual de cierres (encabezado con "Mes" y "Cierres Reg.").');
+  const header = matrix[hRow];
+  const cMes = colIndexByHeader(header,'mes');
+  const cReg = colIndexByHeader(header,'cierres reg');
+  const cAfect = colIndexByHeader(header,'afectaron');
+  const cHrs = colIndexByHeader(header,'hrs cierre') > -1 ? colIndexByHeader(header,'hrs cierre') : colIndexByHeader(header,'hrs. cierre');
+  const cIndisp = colIndexByHeader(header,'indisp');
+
+  const registrados = new Array(12).fill(0);
+  const afectaronOp = new Array(12).fill(0);
+  const hrsAfectacion = new Array(12).fill(0);
+
+  for(let r=hRow+1; r<matrix.length; r++){
+    const row = matrix[r];
+    const mes = row[cMes];
+    if(mes==null || String(mes).trim()==='') continue;
+    if(String(mes).toUpperCase().includes('TOTAL')) break;
+    const idx = MESES_ORDEN.findIndex(m=>m.toLowerCase()===String(mes).trim().toLowerCase());
+    if(idx===-1) continue;
+    registrados[idx] = Number(row[cReg])||0;
+    afectaronOp[idx] = Number(row[cAfect])||0;
+    hrsAfectacion[idx] = cHrs>-1 ? Number(row[cHrs])||0 : 0;
+  }
+
+  // Causas: recorrer hojas mensuales (Ene..Dic) buscando columna "Categoría de Causa"
+  const causas = {};
+  MESES_ABREV.forEach(abrev=>{
+    const sn = wb.SheetNames.find(n=> n.trim().toLowerCase()===abrev.toLowerCase());
+    if(!sn) return;
+    const m = sheetToMatrix(wb.Sheets[sn]);
+    const hr = findHeaderRow(m, ['categor']);
+    if(hr===-1) return;
+    const hdr = m[hr];
+    const cFecha = colIndexByHeader(hdr,'fecha inicio');
+    const cCat = colIndexByHeader(hdr,'categor');
+    for(let r=hr+1; r<m.length; r++){
+      const row=m[r];
+      if(cFecha>-1 && (row[cFecha]==null || row[cFecha]==='')) continue;
+      const cat = row[cCat];
+      if(cat==null || String(cat).trim()==='') continue;
+      const key = String(cat).trim();
+      causas[key] = (causas[key]||0)+1;
+    }
+  });
+
+  const totalRegistrados = registrados.reduce((a,b)=>a+b,0);
+  const totalAfectaron = afectaronOp.reduce((a,b)=>a+b,0);
+  const totalHrs = hrsAfectacion.reduce((a,b)=>a+b,0);
+  const diasDetencion = totalHrs / 24;
+  // % indisponibilidad = horas de afectación / horas disponibles del período (aprox. 24*días transcurridos)
+  // Si no se puede recalcular con precisión, se estima proporcional a las horas del/los meses con datos.
+  const mesesConDatos = registrados.reduce((acc,v,i)=> v>0 || afectaronOp[i]>0 || hrsAfectacion[i]>0 ? acc+1 : acc, 0) || 12;
+  const horasDisponibles = mesesConDatos*730; // aprox. horas por mes
+  const pctIndisponibilidad = totalHrs / (12*730);
+
+  return {
+    meses: MESES_ORDEN, registrados, afectaronOp, hrsAfectacion, causas,
+    totalRegistrados, totalAfectaron, totalHrs, pctIndisponibilidad, diasDetencion
+  };
+}
+
+/* ---------- Parser 3: Naves Aceros Arequipa ---------- */
+function parseNavesAcero(wb){
+  let found = null;
+  for(const sn of wb.SheetNames){
+    const m = sheetToMatrix(wb.Sheets[sn]);
+    const hr = findHeaderRow(m, ['nave','cumplimiento']);
+    if(hr>-1){ found = {matrix:m, hr}; break; }
+  }
+  if(!found) throw new Error('No se encontró una tabla con columnas "Nave" y "Cumplimiento".');
+  const {matrix, hr} = found;
+  const header = matrix[hr];
+  const cNave = colIndexByHeader(header,'nave');
+  const cCumpl = colIndexByHeader(header,'cumplimiento');
+  const cCosto = colIndexByHeader(header,'costo');
+  const cTonTurno = colIndexByHeader(header,'turno-hombre') > -1 ? colIndexByHeader(header,'turno-hombre') : colIndexByHeader(header,'turno hombre');
+  const cTons = colIndexByHeader(header,'tons total');
+  const cDot = colIndexByHeader(header,'dotaci');
+
+  const nombres=[],cumplimiento=[],costoTransf=[],tonTurnoHombre=[],tonsTotales=[],dotacion=[];
+  for(let r=hr+1;r<matrix.length;r++){
+    const row = matrix[r];
+    const nave = row[cNave];
+    if(nave==null || String(nave).trim()==='') continue;
+    if(String(nave).toUpperCase().includes('TOTAL')) break;
+    nombres.push(String(nave).trim());
+    cumplimiento.push(Number(row[cCumpl])||0);
+    costoTransf.push(cCosto>-1?Number(row[cCosto])||0:0);
+    tonTurnoHombre.push(cTonTurno>-1?Number(row[cTonTurno])||0:0);
+    tonsTotales.push(cTons>-1?Number(row[cTons])||0:0);
+    dotacion.push(cDot>-1?Number(row[cDot])||0:0);
+  }
+  const tonsTransferidas = tonsTotales.reduce((a,b)=>a+b,0);
+  const costoPromedio = avg(costoTransf);
+  // Rate contratado de referencia = 3.000 Tons/día (contrato Aceros Arequipa); rate logrado = cumplimiento x contratado
+  const RATE_CONTRATO = 3000;
+  const rateLogrado = cumplimiento.map(v=>Math.round(v*RATE_CONTRATO));
+  const rateContratado = nombres.map(()=>RATE_CONTRATO);
+  return {nombres,cumplimiento,costoTransf,tonTurnoHombre,tonsTotales,dotacion,rateLogrado,rateContratado,tonsTransferidas,costoPromedio};
+}
+
+/* ---------- Parser 4: Estadística Operacional de Naves (rate por producto) ---------- */
+function normalizarMes(raw){
+  if(raw==null) return raw;
+  const s = String(raw).trim();
+  if(!s) return s;
+  const prefix = s.slice(0,3).toLowerCase();
+  const match = MESES_ORDEN.find(m=>m.toLowerCase().startsWith(prefix));
+  return match || s; // si no calza ni por prefijo, se deja el valor original (evita perder datos silenciosamente)
+}
+
+/* ---------- Parser 4b: Recaladas crudas (para el Explorador Interactivo) ---------- */
+function parseRecaladas(wb){
+  let found = null;
+  for(const sn of wb.SheetNames){
+    const m = sheetToMatrix(wb.Sheets[sn]);
+    const hr = findHeaderRow(m, ['producto','rate']);
+    if(hr>-1){ found = {matrix:m, hr}; break; }
+  }
+  if(!found) throw new Error('No se encontró la tabla de estadística operacional (columnas "Producto" y "Rate").');
+  const {matrix, hr} = found;
+  const header = matrix[hr];
+  const cAnio = colIndexByHeader(header,'año');
+  const cMes = colIndexByHeader(header,'mes');
+  const cNave = colIndexByHeader(header,'nave');
+  const cCliente = colIndexByHeader(header,'cliente');
+  const cProducto = colIndexByHeader(header,'producto');
+  const cEmbarcadas = colIndexByHeader(header,'toneladas embarcadas');
+  const cDescargado = colIndexByHeader(header,'tonelaje descargado');
+  const cRateCon = colIndexByHeader(header,'rate contratado');
+  let cRateOp = colIndexByHeader(header,'rate operacional');
+  if(cRateOp===-1) cRateOp = colIndexByHeader(header,'rate comercial');
+  const cUsdProg = colIndexByHeader(header,'usd/ton programado');
+  const cUsdLog = colIndexByHeader(header,'usd/ton logrado');
+  const cTonsHrBruto = colIndexByHeader(header,'tons/hr bruto');
+  const cTonsHrNeto = colIndexByHeader(header,'tons/hr neto');
+  const cNumero = colIndexByHeader(header,'n°') > -1 ? colIndexByHeader(header,'n°') : colIndexByHeader(header,'nº');
+
+  const filasVistas = new Set();
+  const recaladas = [];
+  for(let r=hr+1; r<matrix.length; r++){
+    const row = matrix[r];
+    const y = row[cAnio];
+    const nave = row[cNave];
+    const prod = row[cProducto];
+    const mes = normalizarMes(row[cMes]);
+    if(y==null && !nave) continue;
+    const huella = [cNumero>-1?row[cNumero]:'', y, mes, nave, prod].join('|');
+    if(filasVistas.has(huella)) continue;
+    filasVistas.add(huella);
+    if(y==null || !nave) continue;
+    const emb = Number(row[cEmbarcadas]) || 0;
+    const desc = Number(row[cDescargado]) || 0;
+    const rateCon = Number(row[cRateCon]);
+    const rateOp = Number(row[cRateOp]);
+    const usdProg = Number(row[cUsdProg]);
+    const usdLog = Number(row[cUsdLog]);
+    const tonsHrBruto = Number(row[cTonsHrBruto]);
+    const tonsHrNeto = Number(row[cTonsHrNeto]);
+    recaladas.push({
+      anio: Number(y),
+      mes: mes || null,
+      nave: String(nave).trim(),
+      cliente: row[cCliente] ? String(row[cCliente]).trim() : 'Sin Cliente',
+      producto: prod ? String(prod).trim() : 'Sin Producto',
+      tons: Math.round((emb+desc)*100)/100,
+      rateContratado: isFinite(rateCon) && rateCon>0 ? rateCon : null,
+      rateAlcanzado: isFinite(rateOp) && rateOp>0 && rateOp<=20000 ? rateOp : null,
+      usdProgramado: isFinite(usdProg) && usdProg>0 ? usdProg : null,
+      usdLogrado: isFinite(usdLog) && usdLog>0 ? usdLog : null,
+      tonsHrBruto: isFinite(tonsHrBruto) && tonsHrBruto>0 ? tonsHrBruto : null,
+      tonsHrNeto: isFinite(tonsHrNeto) && tonsHrNeto>0 ? tonsHrNeto : null
+    });
+  }
+  return recaladas;
+}
+
+function parseRatePorProducto(wb, anio=2026){
+  let found = null;
+  for(const sn of wb.SheetNames){
+    const m = sheetToMatrix(wb.Sheets[sn]);
+    const hr = findHeaderRow(m, ['producto','rate']);
+    if(hr>-1){ found = {matrix:m, hr}; break; }
+  }
+  if(!found) throw new Error('No se encontró la tabla de estadística operacional (columnas "Producto" y "Rate").');
+  const {matrix, hr} = found;
+  const header = matrix[hr];
+  const cAnio = colIndexByHeader(header,'año');
+  const cNave = colIndexByHeader(header,'nave');
+  const cProducto = colIndexByHeader(header,'producto');
+  let cRateOp = colIndexByHeader(header,'rate operacional');
+  if(cRateOp===-1) cRateOp = colIndexByHeader(header,'rate comercial');
+  const cRateCon = colIndexByHeader(header,'rate contratado');
+
+  const cMes = colIndexByHeader(header,'mes');
+  const cEmbarcadas = colIndexByHeader(header,'toneladas embarcadas');
+  const cDescargado = colIndexByHeader(header,'tonelaje descargado');
+  const cCliente = colIndexByHeader(header,'cliente');
+  const cUsdProg = colIndexByHeader(header,'usd/ton programado');
+  const cUsdLog = colIndexByHeader(header,'usd/ton logrado');
+  const cTonsHr = colIndexByHeader(header,'tons/hr bruto');
+  const cTonsHrNeto = colIndexByHeader(header,'tons/hr neto');
+  const cNumero = colIndexByHeader(header,'n°') > -1 ? colIndexByHeader(header,'n°') : colIndexByHeader(header,'nº');
+  const caliza = {}, soda = {};
+  const navesRecaladas = {}; // detalle por nave, todas las recaladas del año (para el 3er gráfico)
+  const tonAnual = {}; // total transferido por año (todas las naves/productos)
+  const tonMensual = {}; // total transferido por mes del año solicitado
+  const tonPorProducto = {}; // total transferido por categoría de producto, año solicitado
+  const tonPorProductoMes = {}; // total transferido por categoría de producto y mes, año solicitado
+  const acerosABList = []; // recaladas del cliente "A&B"
+  const filasVistas = new Set(); // huella única por fila, para descartar duplicados accidentales
+  let filasDuplicadas = 0;
+  for(let r=hr+1;r<matrix.length;r++){
+    const row = matrix[r];
+    const y = row[cAnio];
+    const nave = row[cNave];
+    const prod = row[cProducto];
+    const mes = normalizarMes(row[cMes]);
+    const rateOp = Number(row[cRateOp]);
+    const rateCon = Number(row[cRateCon]);
+
+    // Detección de filas duplicadas (misma N°/Año/Mes/Nave/Producto ya procesada)
+    if(y!=null || nave!=null){
+      const huella = [cNumero>-1?row[cNumero]:'', y, mes, nave, prod].join('|');
+      if(filasVistas.has(huella)){
+        filasDuplicadas++;
+        continue;
+      }
+      filasVistas.add(huella);
+    }
+
+    // Tonelaje total transferido (todas las naves/productos, independiente del rate)
+    if(y!=null){
+      const emb = Number(row[cEmbarcadas]) || 0;
+      const desc = Number(row[cDescargado]) || 0;
+      const tonRow = emb + desc;
+      if(tonRow>0){
+        tonAnual[y] = (tonAnual[y]||0) + tonRow;
+        if(Number(y)===Number(anio) && mes){
+          tonMensual[mes] = (tonMensual[mes]||0) + tonRow;
+        }
+        if(Number(y)===Number(anio)){
+          const cat = prod ? categorizarProducto(prod) : 'Carga General / Proyecto';
+          tonPorProducto[cat] = (tonPorProducto[cat]||0) + tonRow;
+          if(mes){
+            if(!tonPorProductoMes[mes]) tonPorProductoMes[mes] = {};
+            tonPorProductoMes[mes][cat] = (tonPorProductoMes[mes][cat]||0) + tonRow;
+          }
+        }
+      }
+
+      // Cliente "A&B" (naves Aceros A&B) — se registra independiente del filtro de producto caliza/soda
+      if(Number(y)===Number(anio) && cCliente>-1 && nave){
+        const cliente = row[cCliente];
+        const clienteNorm = cliente!=null ? String(cliente).trim().toUpperCase().replace(/\s+/g,'') : '';
+        if(clienteNorm==='A&B' && isFinite(rateOp) && rateOp>0){
+          acerosABList.push({
+            nave: String(nave).trim(),
+            rateLogrado: rateOp,
+            rateContratado: isFinite(rateCon) && rateCon>0 ? rateCon : 0,
+            costoProgramado: Number(row[cUsdProg]) || 0,
+            costoLogrado: Number(row[cUsdLog]) || 0,
+            tonsHr: Number(row[cTonsHr]) || 0,
+            tonsTotal: tonRow
+          });
+        }
+      }
+    }
+
+    if(Number(y)!==Number(anio)) continue;
+    if(!nave || !prod) continue;
+    const key = String(nave).trim().toUpperCase().replace(/\s+/g,' ');
+    if(isFinite(rateOp) && rateOp>0 && rateOp<=20000){
+      if(!navesRecaladas[key]) navesRecaladas[key] = [];
+      navesRecaladas[key].push({
+        mes: mes || '',
+        producto: String(prod).trim(),
+        logrado: rateOp,
+        contratado: isFinite(rateCon) && rateCon>0 ? rateCon : null,
+        caliza: String(prod).trim().toLowerCase().startsWith('caliza')
+      });
+    }
+    if(!isFinite(rateOp) || rateOp<=0 || rateOp>20000) continue; // filtro de anomalías (ej. PATAGONIA)
+    const pl = String(prod).trim().toLowerCase();
+    let bucket = null;
+    if(pl.startsWith('caliza')) bucket = caliza;
+    else if(pl.includes('soda')) bucket = soda;
+    if(!bucket) continue;
+    if(!bucket[key]) bucket[key] = {logrados:[], contratados:[]};
+    bucket[key].logrados.push(rateOp);
+    if(isFinite(rateCon) && rateCon>0) bucket[key].contratados.push(rateCon);
+  }
+
+  function toList(bucket){
+    return Object.entries(bucket).map(([nave,v])=>({
+      nave,
+      logrado: avg(v.logrados),
+      contratado: v.contratados.length? avg(v.contratados) : 0
+    })).sort((a,b)=> b.logrado - a.logrado);
+  }
+
+  // Detalle de recaladas de la nave con más movimientos de caliza (por defecto: Karvuna si existe, si no la de mayor volumen)
+  let navePrincipal = Object.keys(navesRecaladas).find(n=>n.includes('KARVUNA'));
+  if(!navePrincipal){
+    navePrincipal = Object.entries(navesRecaladas).sort((a,b)=>b[1].length-a[1].length)[0]?.[0];
+  }
+  const detalle = (navePrincipal ? navesRecaladas[navePrincipal] : []).filter(d=>d.caliza);
+  let contadorProd = {};
+  const karvuna = detalle.map(d=>{
+    const abrevMes = String(d.mes).slice(0,3);
+    const key = abrevMes+'|'+d.producto;
+    contadorProd[key] = (contadorProd[key]||0)+1;
+    const n = detalle.filter(x=>String(x.mes).slice(0,3)===abrevMes && x.producto===d.producto).length;
+    const idx = contadorProd[key];
+    const label = abrevMes+' · '+d.producto+(n>1?' ('+idx+')':'');
+    return {label, logrado:d.logrado, contratado:d.contratado, caliza:d.caliza};
+  });
+
+  const karvunaRates = { viajes: karvuna.map(k=>({label:k.label, rateBruto:k.logrado, rateNeto:k.logrado, contratado:k.contratado})) };
+
+  return { caliza: toList(caliza), soda: toList(soda), karvuna, karvunaRates, tonelaje: buildTonelaje(tonAnual, tonMensual, anio, tonPorProducto, tonPorProductoMes), acerosAB: buildAcerosAB(acerosABList), filasDuplicadas };
+}
+
+function buildAcerosAB(list){
+  if(!list.length) return DATA.acerosAB;
+  return {
+    nombres: list.map(x=>x.nave),
+    rateLogrado: list.map(x=>Math.round(x.rateLogrado)),
+    rateContratado: list.map(x=>x.rateContratado),
+    costoProgramado: list.map(x=>x.costoProgramado),
+    costoLogrado: list.map(x=>x.costoLogrado),
+    tonsHr: list.map(x=>x.tonsHr),
+    tonsTotales: list.map(x=>x.tonsTotal)
+  };
+}
+
+function categorizarProducto(raw){
+  const p = String(raw).trim().toLowerCase();
+  if(p.startsWith('caliza')) return 'Caliza';
+  if(p.includes('soda')) return 'Soda Cáustica';
+  if(p.includes('acero') || p.includes('rollos') || p.includes('plate iron') || p.includes('barras')) return 'Productos de Acero';
+  if(p.includes('finos') || p.includes('granza')) return 'Granza / Finos';
+  if(p.includes('chatarra')) return 'Chatarra';
+  if(p.includes('coque') || p.includes('carbón') || p.includes('carbon') || p.includes('coke')) return 'Carbón y Coque';
+  return 'Carga General / Proyecto';
+}
+
+function buildTonelaje(tonAnual, tonMensual, anioActual, tonPorProducto, tonPorProductoMes){
+  const MESES_ORDEN2 = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  // Combina los años detectados en el archivo con los años históricos ya cargados (ej. 2022-2024, que no vienen en este archivo)
+  const combinado = {};
+  DATA.tonelaje.anual.forEach(a => { combinado[a.anio] = a.total; });
+  Object.keys(tonAnual).forEach(y => { combinado[Number(y)] = tonAnual[y]; });
+  const anual = Object.keys(combinado).map(Number).sort((a,b)=>a-b).map(y=>({
+    anio: y, total: combinado[y], aLaFecha: y===Number(anioActual)
+  }));
+  const mensual2026 = MESES_ORDEN2
+    .filter(m => tonMensual[m]!=null)
+    .map(m => ({mes:m, total:tonMensual[m]}));
+  const porProducto2026 = Object.keys(tonPorProducto||{}).length
+    ? Object.entries(tonPorProducto).map(([producto,total])=>({producto,total}))
+    : DATA.tonelaje.porProducto2026;
+  const porProductoMes2026 = Object.keys(tonPorProductoMes||{}).length
+    ? MESES_ORDEN2.filter(m=>tonPorProductoMes[m]).map(m=>({mes:m, ...tonPorProductoMes[m]}))
+    : DATA.tonelaje.porProductoMes2026;
+  return {
+    anual,
+    mensual2026: mensual2026.length ? mensual2026 : DATA.tonelaje.mensual2026,
+    porProducto2026,
+    porProductoMes2026
+  };
+}
+
+/* =====================================================================
+   MANEJO DE CARGA DE ARCHIVOS (drag & drop + click)
+===================================================================== */
+function setupDropzone(zoneId, inputId, estadoId, onFile){
+  const zone = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  const estado = document.getElementById(estadoId);
+
+  async function handleFile(file){
+    if(!file) return;
+    if(typeof XLSX === 'undefined'){
+      estado.textContent = 'Error: la librería XLSX no cargó (revisa tu conexión a internet).';
+      estado.className = 'estado err';
+      return;
+    }
+    if(typeof Chart === 'undefined'){
+      estado.textContent = 'Error: Chart.js no cargó, no se pueden dibujar los gráficos.';
+      estado.className = 'estado err';
+      return;
+    }
+    estado.textContent = 'Procesando "'+file.name+'"…';
+    estado.className = 'estado default';
+    try{
+      const wb = await readWorkbook(file);
+      const info = onFile(wb);
+      estado.textContent = '✔ Cargado: '+file.name + (info ? ' — '+info : '');
+      estado.className = 'estado ok';
+      renderAll();
+    }catch(err){
+      console.error(err);
+      estado.textContent = 'Error: '+err.message;
+      estado.className = 'estado err';
+    }
+  }
+
+  input.addEventListener('change', e => handleFile(e.target.files[0]));
+  zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', ()=> zone.classList.remove('drag'));
+  zone.addEventListener('drop', e=>{
+    e.preventDefault();
+    zone.classList.remove('drag');
+    if(e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+}
+
+/* ---------- Parser 5: Seguridad (Accidentes con Tiempo Perdido / Días Perdidos) ---------- */
+function parseSeguridadSheet(matrix){
+  function findAnchor(keyword){
+    for(let r=0;r<matrix.length;r++){
+      const row = matrix[r];
+      if(row.some(c => c!=null && String(c).toUpperCase().includes(keyword))) return r;
+    }
+    return -1;
+  }
+  function extractBlock(anchor){
+    if(anchor===-1) return null;
+    const subHeader = matrix[anchor+1] || [];
+    const idRow = matrix[anchor+2] || [];
+    const valorRow = matrix[anchor+3] || [];
+    let kpiCol = -1;
+    (matrix[anchor]||[]).forEach((c,i)=>{ if(c!=null && String(c).toUpperCase().includes('KPI')) kpiCol=i; });
+    const anio = {}, meses = new Array(12).fill(0), semanas = {};
+    for(let c=0;c<subHeader.length;c++){
+      const tipo = subHeader[c]!=null ? String(subHeader[c]).toUpperCase() : '';
+      const id = idRow[c];
+      const val = Number(valorRow[c]) || 0;
+      if(id==null) continue;
+      if(tipo.startsWith('AÑO')) anio[Number(id)] = val;
+      else if(tipo.startsWith('MES')){ const mi = Number(id)-1; if(mi>=0 && mi<12) meses[mi]=val; }
+      else if(tipo.startsWith('SEM')) semanas[Number(id)] = val;
+    }
+    const status = kpiCol>-1 ? (subHeader[kpiCol] || null) : null;
+    return { anio, meses: meses.slice(0,6), semanas, status };
+  }
+  const anchorAcc = findAnchor('ACCIDENTES CON TIEMPO PERDIDO');
+  const anchorDias = findAnchor('DÍAS PERDIDOS') > -1 ? findAnchor('DÍAS PERDIDOS') : findAnchor('DIAS PERDIDOS');
+  const acc = extractBlock(anchorAcc) || {anio:{}, meses:new Array(6).fill(0), status:null};
+  const dias = extractBlock(anchorDias) || {anio:{}, meses:new Array(6).fill(0), status:null};
+
+  // Responsable y metas (fila con "Responsable:" y "Meta accidentes:")
+  let responsable=null, metaAccidentes=0, metaDiasPerdidos=0;
+  for(let r=0;r<matrix.length;r++){
+    const row = matrix[r];
+    const idxResp = row.findIndex(c=> c!=null && String(c).toLowerCase().includes('responsable'));
+    if(idxResp>-1){ responsable = row[idxResp+1] || null; }
+    const idxMA = row.findIndex(c=> c!=null && String(c).toLowerCase().includes('meta accidentes'));
+    if(idxMA>-1){
+      for(let k=idxMA+1;k<row.length;k++){ if(typeof row[k]==='number'){ metaAccidentes=row[k]; break; } }
+    }
+    const idxMD = row.findIndex(c=> c!=null && String(c).toLowerCase().includes('meta días perdidos') || (c!=null && String(c).toLowerCase().includes('meta dias perdidos')));
+    if(idxMD>-1){
+      for(let k=idxMD+1;k<row.length;k++){ if(typeof row[k]==='number'){ metaDiasPerdidos=row[k]; break; } }
+    }
+    if(idxResp>-1 || idxMA>-1 || idxMD>-1) break;
+  }
+
+  return {
+    responsable,
+    metaAccidentes,
+    metaDiasPerdidos,
+    accidentesAnio: acc.anio,
+    accidentesMes: acc.meses,
+    diasPerdidosAnio: dias.anio,
+    diasPerdidosMes: dias.meses,
+    cumpleAccidentes: acc.status,
+    cumpleDiasPerdidos: dias.status
+  };
+}
+
+function parseSeguridad(wb){
+  const snHTP = wb.SheetNames.find(n=>n.toLowerCase().includes('htp')) || wb.SheetNames[0];
+  const snRel = wb.SheetNames.find(n=>n.toLowerCase().includes('reloncav')) || wb.SheetNames[1] || wb.SheetNames[0];
+  const htp = parseSeguridadSheet(sheetToMatrix(wb.Sheets[snHTP]));
+  const reloncavi = parseSeguridadSheet(sheetToMatrix(wb.Sheets[snRel]));
+  return {
+    meses: ['Enero','Febrero','Marzo','Abril','Mayo','Junio'],
+    htp, reloncavi
+  };
+}
+
+/* ---------- Parser 6: Ocupación de Muelle (Sitio Norte / Sitio Sur) ---------- */
+function parseOcupacion(wb){
+  const sn = wb.SheetNames.find(n=>n.toLowerCase().includes('ocupac')) || wb.SheetNames[0];
+  const matrix = sheetToMatrix(wb.Sheets[sn]);
+
+  // --- Bloques anuales: "% Ocupación / Ocupación Terminal Marítimo HTO. YYYY" ---
+  const anual = [];
+  for(let r=0;r<matrix.length;r++){
+    const row = matrix[r];
+    const cell3 = row[3]!=null ? String(row[3]) : '';
+    const m = cell3.match(/OCUPACI[ÓO]N TERMINAL MAR[ÍI]TIMO.*?(\d{4})/i);
+    if(!m) continue;
+    const anio = Number(m[1]);
+    // buscar la fila "Hrs. Disponible Anual" dentro de las próximas ~20 filas
+    let norte=null, sur=null;
+    for(let rr=r+1; rr<Math.min(r+25, matrix.length); rr++){
+      const lbl = matrix[rr][3];
+      if(lbl!=null && String(lbl).toUpperCase().includes('HRS. DISPONIBLE ANUAL')){
+        norte = Number(matrix[rr][11]);
+        sur = Number(matrix[rr][18]);
+        break;
+      }
+      // detener si aparece el siguiente bloque anual antes de encontrar el total
+      if(rr>r+1 && String(lbl||'').match(/OCUPACI[ÓO]N TERMINAL MAR[ÍI]TIMO/i)) break;
+    }
+    if(norte!=null && isFinite(norte)) anual.push({anio, norte, sur: isFinite(sur)?sur:0});
+  }
+  anual.sort((a,b)=>a.anio-b.anio);
+  if(anual.length){ anual[anual.length-1].aLaFecha = true; }
+
+  // --- Tabla resumen "% Utilización Terminal" (mes a mes del año más reciente + anual a la fecha) ---
+  let mensual2026 = [];
+  for(let r=0;r<matrix.length;r++){
+    const row = matrix[r];
+    const cell3 = row[3]!=null ? String(row[3]).toUpperCase() : '';
+    if(cell3.includes('% UTILIZACIÓN TERMINAL') || cell3.includes('% UTILIZACION TERMINAL')){
+      for(let rr=r+1; rr<matrix.length; rr++){
+        const lbl = matrix[rr][4];
+        if(lbl==null || String(lbl).trim()==='') break;
+        const norte = Number(matrix[rr][7]);
+        const sur = Number(matrix[rr][8]);
+        if(!isFinite(norte) && !isFinite(sur)) break;
+        const esAnual = String(lbl).toLowerCase().includes('anual');
+        mensual2026.push({mes: String(lbl).trim(), norte: isFinite(norte)?norte:0, sur: isFinite(sur)?sur:0, destacado: esAnual});
+      }
+      break;
+    }
+  }
+
+  return { anual, mensual2026: mensual2026.length ? mensual2026 : DATA.ocupacion.mensual2026 };
+}
+
+/* ---------- Parser 7: SOF Karvuna — Resumen de Detenciones ---------- */
+function parseKarvunaDetenciones(wb){
+  const sn = wb.SheetNames.find(n=>n.toLowerCase().includes('resumen')) || wb.SheetNames[0];
+  const matrix = sheetToMatrix(wb.Sheets[sn]);
+  const hr = findHeaderRow(matrix, ['tipo operación', 'rate neto']);
+  if(hr===-1) throw new Error('No se encontró la tabla de resumen (encabezado con "Tipo Operación" y "Rate Neto").');
+  const header = matrix[hr];
+  const cViaje = colIndexByHeader(header,'viaje');
+  const cTipo = colIndexByHeader(header,'tipo operaci');
+  const cTons = colIndexByHeader(header,'tonelada');
+  const cMant = colIndexByHeader(header,'mantenci');
+  const cMalTiempo = colIndexByHeader(header,'mal tiempo');
+  const cFaltaCam = colIndexByHeader(header,'falta de camiones');
+  const cCambioBod = colIndexByHeader(header,'cambio de bodega');
+  const cCambioTurno = colIndexByHeader(header,'cambio de turno');
+  const cOtras = colIndexByHeader(header,'otras detenciones');
+  const cRateBruto = colIndexByHeader(header,'rate bruto');
+  const cRateNeto = colIndexByHeader(header,'rate neto');
+  const cUsdTon = colIndexByHeader(header,'usd / tonelada') > -1 ? colIndexByHeader(header,'usd / tonelada') : colIndexByHeader(header,'usd/tonelada');
+
+  const viajes = [];
+  for(let r=hr+1; r<matrix.length; r++){
+    const row = matrix[r];
+    const viaje = row[cViaje];
+    const tipo = row[cTipo];
+    if(viaje==null || String(viaje).trim()==='') continue;
+    if(String(viaje).toUpperCase().includes('TOTAL')) break;
+    if(!tipo || String(tipo).trim().toLowerCase() !== 'descarga') continue; // solo descargas de caliza
+    const usdTonRaw = row[cUsdTon];
+    viajes.push({
+      viaje: String(viaje).trim(),
+      tons: Number(row[cTons])||0,
+      rateBruto: Number(row[cRateBruto])||0,
+      rateNeto: Number(row[cRateNeto])||0,
+      usdTon: (typeof usdTonRaw === 'number') ? usdTonRaw : 0,
+      mant: Number(row[cMant])||0,
+      malTiempo: Number(row[cMalTiempo])||0,
+      faltaCamiones: Number(row[cFaltaCam])||0,
+      cambioBodega: Number(row[cCambioBod])||0,
+      cambioTurno: Number(row[cCambioTurno])||0,
+      otras: Number(row[cOtras])||0
+    });
+  }
+  if(!viajes.length) throw new Error('No se encontraron viajes de tipo "Descarga" en la hoja Resumen.');
+  return { viajes };
+}
+
+setupDropzone('dz-cppt','file-cppt','estado-cppt', wb => { DATA.cppt = parseCppt(wb); });
+setupDropzone('dz-cierres','file-cierres','estado-cierres', wb => { DATA.cierres = parseCierres(wb); });
+setupDropzone('dz-naves','file-naves','estado-naves', wb => { DATA.naves = parseNavesAcero(wb); });
+setupDropzone('dz-rate','file-rate','estado-rate', wb => {
+  const resultado = parseRatePorProducto(wb, 2026);
+  DATA.rate = { caliza: resultado.caliza, soda: resultado.soda, karvuna: resultado.karvuna };
+  DATA.tonelaje = resultado.tonelaje;
+  DATA.acerosAB = resultado.acerosAB;
+  DATA.karvunaRates = resultado.karvunaRates;
+  DATA.recaladas = parseRecaladas(wb);
+  inicializarFiltros();
+  return resultado.filasDuplicadas>0 ? `⚠ se detectaron y descartaron ${resultado.filasDuplicadas} fila(s) duplicada(s)` : null;
+});
+setupDropzone('dz-seguridad','file-seguridad','estado-seguridad', wb => { DATA.seguridad = parseSeguridad(wb); });
+setupDropzone('dz-ocupacion','file-ocupacion','estado-ocupacion', wb => { DATA.ocupacion = parseOcupacion(wb); });
+setupDropzone('dz-karvunadet','file-karvunadet','estado-karvunadet', wb => { DATA.karvunaDetenciones = parseKarvunaDetenciones(wb); });
+
+/* =====================================================================
+   FILTROS DEL EXPLORADOR INTERACTIVO
+===================================================================== */
+document.getElementById('filtroProducto').addEventListener('change', () => { actualizarFiltrosCascada(); renderExplorador(); });
+document.getElementById('filtroCliente').addEventListener('change', () => { actualizarFiltrosCascada(); renderExplorador(); });
+document.getElementById('filtroAnio').addEventListener('change', () => { actualizarFiltrosCascada(); renderExplorador(); });
+document.getElementById('filtroMes').addEventListener('change', () => { renderExplorador(); });
+document.getElementById('btnResetFiltros').addEventListener('click', () => {
+  document.getElementById('filtroProducto').value = '';
+  actualizarFiltrosCascada();
+  document.getElementById('filtroCliente').value = '';
+  document.getElementById('filtroAnio').value = '';
+  document.getElementById('filtroMes').value = '';
+  actualizarFiltrosCascada();
+  renderExplorador();
+});
+
+/* =====================================================================
+   MODAL DE CLAVE DE ACCESO + PANEL DE CARGA
+===================================================================== */
+const CLAVE_ACCESO = 'HTP2026'; // ← cambia esta clave por la que prefieras
+
+const modalOverlay = document.getElementById('modalOverlay');
+const passwordOverlay = document.getElementById('passwordOverlay');
+const inputPassword = document.getElementById('inputPassword');
+const passwordError = document.getElementById('passwordError');
+let sesionDesbloqueada = false;
+
+function openModal(){ modalOverlay.classList.add('open'); }
+function closeModal(){ modalOverlay.classList.remove('open'); }
+function openPasswordModal(){
+  passwordError.classList.remove('show');
+  inputPassword.value = '';
+  passwordOverlay.classList.add('open');
+  setTimeout(()=>inputPassword.focus(), 50);
+}
+function closePasswordModal(){ passwordOverlay.classList.remove('open'); }
+
+document.getElementById('btnOpenUpload').addEventListener('click', () => {
+  if(sesionDesbloqueada){ openModal(); } else { openPasswordModal(); }
+});
+document.getElementById('btnCloseUpload').addEventListener('click', closeModal);
+document.getElementById('btnApplyClose').addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', e => { if(e.target === modalOverlay) closeModal(); });
+
+document.getElementById('btnClosePassword').addEventListener('click', closePasswordModal);
+passwordOverlay.addEventListener('click', e => { if(e.target === passwordOverlay) closePasswordModal(); });
+document.getElementById('formPassword').addEventListener('submit', e => {
+  e.preventDefault();
+  if(inputPassword.value === CLAVE_ACCESO){
+    sesionDesbloqueada = true;
+    closePasswordModal();
+    openModal();
+  } else {
+    passwordError.classList.add('show');
+    inputPassword.value = '';
+    inputPassword.focus();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ closeModal(); closePasswordModal(); }
+});
+
+</script>
+</body>
+</html>
