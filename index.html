@@ -949,36 +949,9 @@
     </div>
   </section>
 
-  <!-- ================= SECCIÓN 6: KARVUNA — DETENCIONES Y COSTOS ================= -->
-  <section class="bloque">
-    <h2 class="titulo-seccion">6&nbsp;&nbsp;·&nbsp;&nbsp;KARVUNA — DETALLE DE DESCARGAS: RATE NETO, COSTOS Y DETENCIONES</h2>
-    <div class="insight" id="insightKarvunaDet">Cargando indicador de detenciones…</div>
-    <div class="kpi-alert-row">
-      <div class="kpi-alert info">
-        <div class="kpi-alert-valor" id="valorUsdTonProm">—</div>
-        <div class="kpi-alert-etiqueta">USD/Ton Promedio (8 descargas)</div>
-      </div>
-      <div class="kpi-alert">
-        <div class="kpi-alert-valor" id="valorDetTotal">—</div>
-        <div class="kpi-alert-etiqueta">Horas Totales de Detención</div>
-      </div>
-    </div>
-    <div class="chart-grid" style="grid-template-columns:1fr;">
-      <div class="chart-box"><div class="chart-title">Costo USD/Tonelada por viaje</div><canvas id="chartKarvunaCosto"></canvas></div>
-    </div>
-    <div class="chart-grid" style="grid-template-columns:1fr;">
-      <div class="chart-box tall"><div class="chart-title">Detenciones por tipo y por viaje (horas)</div><canvas id="chartKarvunaDetenciones"></canvas></div>
-    </div>
-    <div class="nota-pie">
-      Costo USD/Tonelada y Detenciones por tipo: fuente <b>SOF Karvuna</b> — Resumen de Operaciones y Detenciones. Solo se incluyen
-      los 8 viajes de <b>descarga</b> de Caliza (se excluyen V.170, V.16 y V.22, cargas break-bulk/chatarra con ventanas operativas
-      muy cortas y no comparables). Rate Neto (SOF) = Toneladas ÷ Horas Netas (descontando detenciones dentro de la operación) × 24.
-    </div>
-  </section>
-
 
   <div class="nota-pie" style="margin-top:-6px;">
-    Fuente: Dashboard Seguridad HTP/Reloncaví · Turnos CPPT 2026 · Cierres de Puerto 2026 (KPI) · Tabla Naves Aceros Arequipa · Estadística Operacional de Naves · Ocupación de Muelle · SOF Karvuna.
+    Fuente: Dashboard Seguridad HTP/Reloncaví · Turnos CPPT 2026 · Cierres de Puerto 2026 (KPI) · Tabla Naves Aceros Arequipa · Estadística Operacional de Naves · Ocupación de Muelle.
     Cobertura ponderada = turnos efectivos ÷ turnos convenio. % indisponibilidad = horas de afectación ÷ horas disponibles.
     Costo de transferencia = dotación + maquinaria (excluye porteo).
   </div>
@@ -2033,7 +2006,6 @@ function renderAll(){
   renderOcupacion();
   renderTonelaje();
   renderExplorador();
-  renderKarvunaDetenciones();
 }
 
 if(typeof Chart === 'undefined'){
