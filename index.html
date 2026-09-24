@@ -2234,6 +2234,7 @@ function parseRecaladas(wb){
   const cEmbarcadas = colIndexByHeader(header,'toneladas embarcadas');
   const cDescargado = colIndexByHeader(header,'tonelaje descargado');
   const cRateCon = colIndexByHeader(header,'rate contratado');
+  const cRateAlcanzado = colIndexByHeader(header,'rate alcanzado');
   let cRateOp = colIndexByHeader(header,'rate operacional');
   if(cRateOp===-1) cRateOp = colIndexByHeader(header,'rate comercial');
   const cUsdProg = colIndexByHeader(header,'usd/ton programado');
@@ -2258,7 +2259,9 @@ function parseRecaladas(wb){
     const emb = Number(row[cEmbarcadas]) || 0;
     const desc = Number(row[cDescargado]) || 0;
     const rateCon = Number(row[cRateCon]);
-    const rateOp = Number(row[cRateOp]);
+    const rateAlcanzadoRaw = Number(row[cRateAlcanzado]);
+    const rateOpRaw = Number(row[cRateOp]);
+    const rateOp = isFinite(rateAlcanzadoRaw) && rateAlcanzadoRaw>0 ? rateAlcanzadoRaw : rateOpRaw;
     const usdProg = Number(row[cUsdProg]);
     const usdLog = Number(row[cUsdLog]);
     const tonsHrBruto = Number(row[cTonsHrBruto]);
@@ -2294,6 +2297,7 @@ function parseRatePorProducto(wb, anio=2026){
   const cAnio = colIndexByHeader(header,'año');
   const cNave = colIndexByHeader(header,'nave');
   const cProducto = colIndexByHeader(header,'producto');
+  const cRateAlcanzado = colIndexByHeader(header,'rate alcanzado');
   let cRateOp = colIndexByHeader(header,'rate operacional');
   if(cRateOp===-1) cRateOp = colIndexByHeader(header,'rate comercial');
   const cRateCon = colIndexByHeader(header,'rate contratado');
@@ -2322,7 +2326,9 @@ function parseRatePorProducto(wb, anio=2026){
     const nave = row[cNave];
     const prod = row[cProducto];
     const mes = normalizarMes(row[cMes]);
-    const rateOp = Number(row[cRateOp]);
+    const rateAlcanzadoRaw = Number(row[cRateAlcanzado]);
+    const rateOpRaw = Number(row[cRateOp]);
+    const rateOp = isFinite(rateAlcanzadoRaw) && rateAlcanzadoRaw>0 ? rateAlcanzadoRaw : rateOpRaw;
     const rateCon = Number(row[cRateCon]);
 
     // Detección de filas duplicadas (misma N°/Año/Mes/Nave/Producto ya procesada)
