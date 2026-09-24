@@ -1719,10 +1719,10 @@ function renderTonelaje(){
   /* --- Toneladas por producto y mes (barras apiladas) --- */
   const porProdMes = d.porProductoMes2026 || [];
   if(porProdMes.length){
-    const categorias = ['Caliza','Soda Cáustica','Productos de Acero','Granza / Finos','Chatarra','Carbón y Coque','Carga General / Proyecto'];
+    const categorias = ['Caliza','Soda Cáustica','Productos de Acero','Granza / Finos','Chatarra','Carbón y Coque','Pet Coke','Carga General / Proyecto'];
     const coloresCat = {
       'Caliza':AZUL, 'Soda Cáustica':AZULCLARO, 'Productos de Acero':'#16294f',
-      'Granza / Finos':'#F0A876', 'Chatarra':'#8B3A2A', 'Carbón y Coque':NARANJA,
+      'Granza / Finos':'#F0A876', 'Chatarra':'#8B3A2A', 'Carbón y Coque':NARANJA, 'Pet Coke':'#6B4C9A',
       'Carga General / Proyecto':'#E8E8EC'
     };
     destroy('chartTonProductoMes');
@@ -1943,6 +1943,9 @@ function actualizarFiltrosCascada(){
 }
 
 function inicializarFiltros(){
+  // Normaliza el producto de cada recalada por categoría, sin importar si viene de los datos por
+  // defecto, de localStorage (posiblemente guardado antes de esta corrección), o de un archivo recién subido.
+  DATA.recaladas = DATA.recaladas.map(r => ({...r, producto: categorizarProducto(r.producto)}));
   const productos = [...new Set(DATA.recaladas.map(r=>r.producto))].sort();
   poblarSelect('filtroProducto', productos, 'Todos');
   actualizarFiltrosCascada();
@@ -2500,12 +2503,15 @@ function buildAcerosAB(list){
 }
 
 function categorizarProducto(raw){
+  if(raw==null) return 'Sin Producto';
   const p = String(raw).trim().toLowerCase();
+  if(p==='' || p==='sin producto') return 'Sin Producto';
   if(p.startsWith('caliza')) return 'Caliza';
   if(p.includes('soda')) return 'Soda Cáustica';
   if(p.includes('acero') || p.includes('rollos') || p.includes('plate iron') || p.includes('barras')) return 'Productos de Acero';
   if(p.includes('finos') || p.includes('granza')) return 'Granza / Finos';
   if(p.includes('chatarra')) return 'Chatarra';
+  if(p.includes('pet coke') || p.includes('petcoke')) return 'Pet Coke';
   if(p.includes('coque') || p.includes('carbón') || p.includes('carbon') || p.includes('coke')) return 'Carbón y Coque';
   return 'Carga General / Proyecto';
 }
