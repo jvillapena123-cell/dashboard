@@ -660,6 +660,34 @@
     border-radius:8px;
     white-space:nowrap;
   }
+  /* ---------- Tabla comparativa (mensual por año) ---------- */
+  .tabla-comparativa{
+    width:100%;
+    border-collapse:collapse;
+    font-size:11.5px;
+  }
+  .tabla-comparativa th{
+    background:var(--azul);
+    color:var(--blanco);
+    padding:7px 8px;
+    text-align:right;
+    font-weight:700;
+  }
+  .tabla-comparativa th:first-child{ text-align:left; }
+  .tabla-comparativa td{
+    padding:6px 8px;
+    text-align:right;
+    border-bottom:1px solid var(--gris);
+    color:#1B2233;
+  }
+  .tabla-comparativa td:first-child{ text-align:left; font-weight:600; color:var(--azul); }
+  .tabla-comparativa tr.fila-total td{
+    font-weight:800;
+    background:#EEF2F8;
+    border-top:2px solid var(--azul);
+  }
+  .tabla-comparativa td.var-pos{ color:var(--verde-ok); font-weight:700; }
+  .tabla-comparativa td.var-neg{ color:var(--rojo-warn); font-weight:700; }
   .movilizado-grid{
     display:grid;
     grid-template-columns:2.2fr 1fr;
@@ -917,9 +945,43 @@
       <div class="chart-box tall"><div class="chart-title">Toneladas por producto y mes – 2026</div><canvas id="chartTonProductoMes"></canvas></div>
     </div>
 
+    <div class="movilizado-header" style="margin-top:26px;">
+      <h3>Comparativo Mensual 2025 vs. 2026</h3>
+      <p>Toneladas transferidas mes a mes (embarcado + descargado), ambos años lado a lado</p>
+    </div>
+    <div class="chart-grid" style="grid-template-columns:1fr 1.3fr; align-items:start;">
+      <div class="chart-box">
+        <div class="chart-title">Transferencia mensual por año (Ton)</div>
+        <table class="tabla-comparativa" id="tablaComparativaAnual">
+          <thead>
+            <tr><th>Mes</th><th>2025</th><th>2026</th><th>Var. %</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-box tall"><div class="chart-title">Toneladas Transferidas Mes a Mes: 2025 vs. 2026</div><canvas id="chartComparativaAnual"></canvas></div>
+    </div>
+
+    <div class="movilizado-header" style="margin-top:26px;">
+      <h3>Número de Naves — 2026</h3>
+      <p>Naves distintas (recaladas únicas) que operaron durante el año, por mes y por producto</p>
+    </div>
+    <div class="kpi-alert-row">
+      <div class="kpi-alert info">
+        <div class="kpi-alert-valor" id="valorNavesAcumulado">—</div>
+        <div class="kpi-alert-etiqueta">Naves Distintas Acumuladas (2026)</div>
+      </div>
+    </div>
+    <div class="chart-grid dos-col">
+      <div class="chart-box tall"><div class="chart-title">Número de naves por mes (2026)</div><canvas id="chartNavesPorMes"></canvas></div>
+      <div class="chart-box tall"><div class="chart-title">Número de naves por producto</div><canvas id="chartNavesPorProducto"></canvas></div>
+    </div>
+
     <div class="nota-pie">
       Total transferido = Toneladas embarcadas + Tonelaje descargado, sumadas para todas las naves y productos del terminal
-      (no solo Aceros Arequipa). Fuente: Estadística Operacional de Naves.
+      (no solo Aceros Arequipa). Var. % solo se calcula en meses con datos en ambos años. Número de naves = nombres distintos
+      registrados en la columna "Nave" (recaladas separadas de una misma nave, ej. "KARVUNA" y "KARVUNA 2", cuentan por separado
+      si así vienen en la fuente). Fuente: Estadística Operacional de Naves.
     </div>
   </section>
 
@@ -1158,40 +1220,64 @@ let DATA = {
       {anio:2022, total:2291235, aLaFecha:false},
       {anio:2023, total:2291157, aLaFecha:false},
       {anio:2024, total:1329364, aLaFecha:false},
-      {anio:2025, total:606778.9, aLaFecha:false},
-      {anio:2026, total:510394.95, aLaFecha:true}
+      {anio:2025, total:606779, aLaFecha:false},
+      {anio:2026, total:567428, aLaFecha:true}
     ],
     porProducto2026: [
       {producto:'Caliza', total:198135.1},
-      {producto:'Soda Cáustica', total:191801.3},
-      {producto:'Productos de Acero', total:53649.5},
+      {producto:'Soda Cáustica', total:211252.3},
+      {producto:'Productos de Acero', total:68820.4},
       {producto:'Granza / Finos', total:41352.3},
+      {producto:'Pet Coke', total:33418.6},
       {producto:'Chatarra', total:14008.5},
-      {producto:'Carbón y Coque', total:11007.4},
+      {producto:'Carbón y Coque', total:0},
       {producto:'Carga General / Proyecto', total:440.8}
     ],
     mensual2026: [
-      {mes:'Enero', total:49973.4},
-      {mes:'Febrero', total:26484.6},
-      {mes:'Marzo', total:35711.2},
-      {mes:'Abril', total:81922.9},
-      {mes:'Mayo', total:125563.2},
-      {mes:'Junio', total:44796.5},
-      {mes:'Julio', total:51586.6},
-      {mes:'Agosto', total:74733.3},
-      {mes:'Septiembre', total:19623.2}
+      {mes:'Enero', total:49973},
+      {mes:'Febrero', total:26485},
+      {mes:'Marzo', total:35711},
+      {mes:'Abril', total:81923},
+      {mes:'Mayo', total:125563},
+      {mes:'Junio', total:44796},
+      {mes:'Julio', total:51587},
+      {mes:'Agosto', total:56711},
+      {mes:'Septiembre', total:94678}
     ],
+    mensualPorAnio: {
+      2025: {Enero:74905, Febrero:26117, Marzo:57478, Abril:93143, Mayo:80086, Junio:23060, Julio:24992, Agosto:65554, Septiembre:24382, Octubre:13053, Noviembre:64937, Diciembre:59074},
+      2026: {Enero:49973, Febrero:26485, Marzo:35711, Abril:81923, Mayo:125563, Junio:44796, Julio:51587, Agosto:56711, Septiembre:94678, Octubre:0, Noviembre:0, Diciembre:0}
+    },
     porProductoMes2026: [
-      {mes:'Enero',      Caliza:0,     'Soda Cáustica':25039.8, 'Productos de Acero':10837.1, 'Granza / Finos':0,     Chatarra:14008.5, 'Carbón y Coque':0,     'Carga General / Proyecto':88.0},
-      {mes:'Febrero',    Caliza:0,     'Soda Cáustica':21613.2, 'Productos de Acero':4663.4,  'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':208.0},
-      {mes:'Marzo',      Caliza:0,     'Soda Cáustica':24652.0, 'Productos de Acero':0,       'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':11007.4,'Carga General / Proyecto':51.8},
-      {mes:'Abril',      Caliza:66476.9,'Soda Cáustica':15392.0,'Productos de Acero':0,       'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':54.0},
-      {mes:'Mayo',       Caliza:38739.2,'Soda Cáustica':29866.5,'Productos de Acero':15590.1, 'Granza / Finos':41352.3,Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':15.0},
-      {mes:'Junio',      Caliza:15442.5,'Soda Cáustica':24185.4,'Productos de Acero':5164.6,  'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':4.0},
-      {mes:'Julio',      Caliza:18571.2,'Soda Cáustica':21030.4,'Productos de Acero':11965.0, 'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':20.0},
-      {mes:'Agosto',     Caliza:39282.0,'Soda Cáustica':30022.0,'Productos de Acero':5429.3,  'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':0},
-      {mes:'Septiembre', Caliza:19623.2,'Soda Cáustica':0,      'Productos de Acero':0,       'Granza / Finos':0,     Chatarra:0,       'Carbón y Coque':0,     'Carga General / Proyecto':0}
+      {mes:'Enero',      Caliza:0,      'Soda Cáustica':25039.8, 'Productos de Acero':10837.1, 'Granza / Finos':0,     Chatarra:14008.5, 'Pet Coke':0,     'Carga General / Proyecto':88.0},
+      {mes:'Febrero',    Caliza:0,      'Soda Cáustica':21613.2, 'Productos de Acero':4663.4,  'Granza / Finos':0,     Chatarra:0,       'Pet Coke':0,     'Carga General / Proyecto':208.0},
+      {mes:'Marzo',      Caliza:0,      'Soda Cáustica':24652.0, 'Productos de Acero':0,       'Granza / Finos':0,     Chatarra:0,       'Pet Coke':11007.4,'Carga General / Proyecto':51.8},
+      {mes:'Abril',      Caliza:66476.9,'Soda Cáustica':15392.0, 'Productos de Acero':0,       'Granza / Finos':0,     Chatarra:0,       'Pet Coke':0,     'Carga General / Proyecto':54.0},
+      {mes:'Mayo',       Caliza:38739.2,'Soda Cáustica':29866.5, 'Productos de Acero':15590.1, 'Granza / Finos':41352.3,Chatarra:0,       'Pet Coke':0,     'Carga General / Proyecto':15.0},
+      {mes:'Junio',      Caliza:15442.5,'Soda Cáustica':24185.4, 'Productos de Acero':5164.6,  'Granza / Finos':0,     Chatarra:0,       'Pet Coke':0,     'Carga General / Proyecto':4.0},
+      {mes:'Julio',      Caliza:18571.2,'Soda Cáustica':21030.4, 'Productos de Acero':11965.0, 'Granza / Finos':0,     Chatarra:0,       'Pet Coke':0,     'Carga General / Proyecto':20.0},
+      {mes:'Agosto',     Caliza:39282.0,'Soda Cáustica':12000.0, 'Productos de Acero':5429.3,  'Granza / Finos':0,     Chatarra:0,       'Pet Coke':0,     'Carga General / Proyecto':0},
+      {mes:'Septiembre', Caliza:19623.2,'Soda Cáustica':37473.0, 'Productos de Acero':15170.9, 'Granza / Finos':0,     Chatarra:0,       'Pet Coke':22411.2,'Carga General / Proyecto':0}
     ]
+  },
+  navesStats: {
+    porMes2026: [
+      {mes:'Enero', cantidad:7}, {mes:'Febrero', cantidad:9}, {mes:'Marzo', cantidad:5},
+      {mes:'Abril', cantidad:5}, {mes:'Mayo', cantidad:12}, {mes:'Junio', cantidad:5},
+      {mes:'Julio', cantidad:7}, {mes:'Agosto', cantidad:4}, {mes:'Septiembre', cantidad:7}
+    ],
+    porProducto: [
+      {producto:'Carga General / Proyecto', cantidad:22},
+      {producto:'Soda Cáustica', cantidad:25},
+      {producto:'Caliza', cantidad:13},
+      {producto:'Productos de Acero', cantidad:10},
+      {producto:'Carbón y Coque', cantidad:5},
+      {producto:'Pet Coke', cantidad:3},
+      {producto:'Granza / Finos', cantidad:3},
+      {producto:'Chatarra', cantidad:2},
+      {producto:'Sin Producto', cantidad:2}
+    ],
+    totalAcumulado2026: 50
   },
   ocupacion: {
     anual: [
@@ -1751,6 +1837,63 @@ function renderTonelaje(){
       }
     });
   }
+
+  /* --- Comparativo mensual 2025 vs. 2026 (tabla + gráfico) --- */
+  const porAnio = d.mensualPorAnio || {};
+  const anios = Object.keys(porAnio).map(Number).sort((a,b)=>a-b);
+  if(anios.length){
+    const anioA = anios[0], anioB = anios[anios.length-1];
+    const datosA = porAnio[anioA] || {}, datosB = porAnio[anioB] || {};
+    const filasTabla = MESES_ORDEN.map(m=>{
+      const vA = datosA[m]||0, vB = datosB[m]||0;
+      const ambos = vA>0 && vB>0;
+      const varPct = ambos ? ((vB-vA)/vA*100) : null;
+      return {mes:m, vA, vB, varPct};
+    });
+    const totalA = filasTabla.reduce((a,f)=>a+f.vA,0);
+    const totalB = filasTabla.reduce((a,f)=>a+f.vB,0);
+
+    const tbody = document.querySelector('#tablaComparativaAnual tbody');
+    tbody.innerHTML = filasTabla.map(f=>{
+      const varTxt = f.varPct==null ? '—' : (f.varPct>=0?'+':'')+f.varPct.toFixed(1)+'%';
+      const varCls = f.varPct==null ? '' : (f.varPct>=0?'var-pos':'var-neg');
+      return `<tr><td>${f.mes}</td><td>${fmtInt(f.vA)}</td><td>${fmtInt(f.vB)}</td><td class="${varCls}">${varTxt}</td></tr>`;
+    }).join('') + `<tr class="fila-total"><td>Total</td><td>${fmtInt(totalA)}</td><td>${fmtInt(totalB)}</td><td>—</td></tr>`;
+    const theadRow = document.querySelector('#tablaComparativaAnual thead tr');
+    theadRow.innerHTML = `<th>Mes</th><th>${anioA}</th><th>${anioB}</th><th>Var. %</th>`;
+
+    destroy('chartComparativaAnual');
+    const ctxComp = document.getElementById('chartComparativaAnual').getContext('2d');
+    charts['chartComparativaAnual'] = new Chart(ctxComp, {
+      type:'bar',
+      data:{
+        labels: MESES_ORDEN.map(m=>m.slice(0,3)),
+        datasets:[
+          {label:String(anioA), data: filasTabla.map(f=>f.vA), backgroundColor: AZULCLARO, borderRadius:2},
+          {label:String(anioB), data: filasTabla.map(f=>f.vB), backgroundColor: AZUL, borderRadius:2}
+        ]
+      },
+      options:{
+        responsive:true,
+        plugins:{legend:{position:'top', labels:{boxWidth:10,font:{size:10}}}, datalabels:{display:false}},
+        scales:{
+          y:{beginAtZero:true, ticks:{font:{size:9}, callback:v=>fmtInt(v)}, title:{display:true, text:'Toneladas', font:{size:10}}},
+          x:{ticks:{font:{size:9}}}
+        }
+      }
+    });
+  }
+
+  /* --- Número de naves — 2026 (por mes y por producto) --- */
+  const nStats = DATA.navesStats;
+  if(nStats){
+    document.getElementById('valorNavesAcumulado').textContent = fmtInt(nStats.totalAcumulado2026);
+
+    singleBar('chartNavesPorMes', nStats.porMes2026.map(m=>m.mes), nStats.porMes2026.map(m=>m.cantidad), AZUL, fmtInt);
+
+    const porProdOrdenado = nStats.porProducto.slice().sort((a,b)=>b.cantidad-a.cantidad);
+    singleBar('chartNavesPorProducto', porProdOrdenado.map(p=>p.producto), porProdOrdenado.map(p=>p.cantidad), NARANJA, fmtInt);
+  }
 }
 
 /* =====================================================================
@@ -2050,7 +2193,7 @@ function restaurarDesdeStorage(){
     cppt:'estado-cppt', cierres:'estado-cierres', naves:'estado-naves', rate:'estado-rate',
     seguridad:'estado-seguridad', ocupacion:'estado-ocupacion', karvunaDetenciones:'estado-karvunadet'
   };
-  const camposSinEstadoPropio = ['tonelaje','acerosAB','karvunaRates','recaladas']; // se restauran junto con 'rate'
+  const camposSinEstadoPropio = ['tonelaje','acerosAB','karvunaRates','navesStats','recaladas']; // se restauran junto con 'rate'
   [...Object.keys(camposConEstado), ...camposSinEstadoPropio].forEach(campo=>{
     const guardado = cargarDeStorage(campo);
     if(guardado!=null) DATA[campo] = guardado;
@@ -2373,6 +2516,9 @@ function parseRatePorProducto(wb, anio=2026){
   const tonMensual = {}; // total transferido por mes del año solicitado
   const tonPorProducto = {}; // total transferido por categoría de producto, año solicitado
   const tonPorProductoMes = {}; // total transferido por categoría de producto y mes, año solicitado
+  const tonMensualPorAnio = {}; // total transferido por año y mes (todos los años detectados)
+  const navesPorMesAnio = {}; // Set de naves por mes, del año solicitado
+  const navesPorProducto = {}; // Set de naves por categoría de producto (todos los años)
   const acerosABList = []; // recaladas del cliente "A&B"
   const filasVistas = new Set(); // huella única por fila, para descartar duplicados accidentales
   let filasDuplicadas = 0;
@@ -2407,6 +2553,10 @@ function parseRatePorProducto(wb, anio=2026){
         if(Number(y)===Number(anio) && mes){
           tonMensual[mes] = (tonMensual[mes]||0) + tonRow;
         }
+        if(mes){
+          if(!tonMensualPorAnio[y]) tonMensualPorAnio[y] = {};
+          tonMensualPorAnio[y][mes] = (tonMensualPorAnio[y][mes]||0) + tonRow;
+        }
         if(Number(y)===Number(anio)){
           const cat = prod ? categorizarProducto(prod) : 'Carga General / Proyecto';
           tonPorProducto[cat] = (tonPorProducto[cat]||0) + tonRow;
@@ -2415,6 +2565,17 @@ function parseRatePorProducto(wb, anio=2026){
             tonPorProductoMes[mes][cat] = (tonPorProductoMes[mes][cat]||0) + tonRow;
           }
         }
+      }
+      // Naves distintas por mes (año solicitado) y por producto (todos los años), independiente del tonelaje
+      if(nave){
+        const naveNorm = String(nave).trim();
+        if(Number(y)===Number(anio) && mes){
+          if(!navesPorMesAnio[mes]) navesPorMesAnio[mes] = new Set();
+          navesPorMesAnio[mes].add(naveNorm);
+        }
+        const catNave = prod ? categorizarProducto(prod) : 'Sin Producto';
+        if(!navesPorProducto[catNave]) navesPorProducto[catNave] = new Set();
+        navesPorProducto[catNave].add(naveNorm);
       }
 
       // Cliente "A&B" (naves Aceros A&B) — se registra independiente del filtro de producto caliza/soda
@@ -2486,7 +2647,12 @@ function parseRatePorProducto(wb, anio=2026){
 
   const karvunaRates = { viajes: karvuna.map(k=>({label:k.label, rateBruto:k.logrado, rateNeto:k.logrado, contratado:k.contratado})) };
 
-  return { caliza: toList(caliza), soda: toList(soda), karvuna, karvunaRates, tonelaje: buildTonelaje(tonAnual, tonMensual, anio, tonPorProducto, tonPorProductoMes), acerosAB: buildAcerosAB(acerosABList), filasDuplicadas };
+  return {
+    caliza: toList(caliza), soda: toList(soda), karvuna, karvunaRates,
+    tonelaje: buildTonelaje(tonAnual, tonMensual, anio, tonPorProducto, tonPorProductoMes, tonMensualPorAnio),
+    navesStats: buildNavesStats(navesPorMesAnio, navesPorProducto),
+    acerosAB: buildAcerosAB(acerosABList), filasDuplicadas
+  };
 }
 
 function buildAcerosAB(list){
@@ -2516,7 +2682,7 @@ function categorizarProducto(raw){
   return 'Carga General / Proyecto';
 }
 
-function buildTonelaje(tonAnual, tonMensual, anioActual, tonPorProducto, tonPorProductoMes){
+function buildTonelaje(tonAnual, tonMensual, anioActual, tonPorProducto, tonPorProductoMes, tonMensualPorAnio){
   const MESES_ORDEN2 = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   // Combina los años detectados en el archivo con los años históricos ya cargados (ej. 2022-2024, que no vienen en este archivo)
   const combinado = {};
@@ -2534,11 +2700,31 @@ function buildTonelaje(tonAnual, tonMensual, anioActual, tonPorProducto, tonPorP
   const porProductoMes2026 = Object.keys(tonPorProductoMes||{}).length
     ? MESES_ORDEN2.filter(m=>tonPorProductoMes[m]).map(m=>({mes:m, ...tonPorProductoMes[m]}))
     : DATA.tonelaje.porProductoMes2026;
+  // Combina el histórico mes a mes por año ya guardado con los años recién detectados en el archivo
+  const mensualPorAnio = {};
+  Object.entries(DATA.tonelaje.mensualPorAnio||{}).forEach(([y,meses])=>{ mensualPorAnio[y] = {...meses}; });
+  Object.entries(tonMensualPorAnio||{}).forEach(([y,meses])=>{ mensualPorAnio[y] = {...meses}; });
   return {
     anual,
     mensual2026: mensual2026.length ? mensual2026 : DATA.tonelaje.mensual2026,
     porProducto2026,
-    porProductoMes2026
+    porProductoMes2026,
+    mensualPorAnio
+  };
+}
+
+function buildNavesStats(navesPorMesAnio, navesPorProducto){
+  const MESES_ORDEN3 = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const porMes2026 = MESES_ORDEN3
+    .filter(m => navesPorMesAnio[m])
+    .map(m => ({mes:m, cantidad: navesPorMesAnio[m].size}));
+  const porProducto = Object.entries(navesPorProducto||{}).map(([producto,set])=>({producto, cantidad:set.size}));
+  const todasLasNaves = new Set();
+  Object.values(navesPorMesAnio||{}).forEach(set => set.forEach(n => todasLasNaves.add(n)));
+  return {
+    porMes2026: porMes2026.length ? porMes2026 : DATA.navesStats.porMes2026,
+    porProducto: porProducto.length ? porProducto : DATA.navesStats.porProducto,
+    totalAcumulado2026: todasLasNaves.size || DATA.navesStats.totalAcumulado2026
   };
 }
 
@@ -2770,11 +2956,13 @@ setupDropzone('dz-rate','file-rate','estado-rate', wb => {
   DATA.tonelaje = resultado.tonelaje;
   DATA.acerosAB = resultado.acerosAB;
   DATA.karvunaRates = resultado.karvunaRates;
+  DATA.navesStats = resultado.navesStats;
   DATA.recaladas = parseRecaladas(wb);
   guardarEnStorage('rate', DATA.rate);
   guardarEnStorage('tonelaje', DATA.tonelaje);
   guardarEnStorage('acerosAB', DATA.acerosAB);
   guardarEnStorage('karvunaRates', DATA.karvunaRates);
+  guardarEnStorage('navesStats', DATA.navesStats);
   guardarEnStorage('recaladas', DATA.recaladas);
   inicializarFiltros();
   return resultado.filasDuplicadas>0 ? `⚠ se detectaron y descartaron ${resultado.filasDuplicadas} fila(s) duplicada(s)` : null;
