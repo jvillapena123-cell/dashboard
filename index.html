@@ -2256,11 +2256,7 @@ function grupoNaveChart(id, items, campoA, campoB, labelA, labelB, colorA, color
 
 function renderExplorador(){
   const filas = obtenerFilasFiltradas();
-  const porNave = {};
-  filas.forEach(r=>{
-    if(!porNave[r.nave]) porNave[r.nave] = [];
-    porNave[r.nave].push(r);
-  });
+
   // Clave cronológica real: año × 12 + índice de mes, así se ordena correctamente aunque
   // los datos mezclen varios años (ej. Noviembre 2025 debe quedar antes que Enero 2026).
   const claveCronologica = r => {
@@ -2269,23 +2265,39 @@ function renderExplorador(){
     const anio = Number(r.anio) || 0;
     return anio*12 + mesIdx;
   };
-  const naves = Object.keys(porNave).sort((a,b)=>{
-    const claveA = Math.min(...porNave[a].map(claveCronologica));
-    const claveB = Math.min(...porNave[b].map(claveCronologica));
+
+  // Cada FILA (recalada) es su propia barra — no se promedian varias recaladas de la misma
+  // nave entre sí. Si el mismo nombre de nave aparece más de una vez en el filtro actual,
+  // se distingue con el mes (y el año, si el filtro cruza más de un año) entre paréntesis.
+  const conteoPorNave = {};
+  filas.forEach(r=>{ conteoPorNave[r.nave] = (conteoPorNave[r.nave]||0)+1; });
+  const aniosDistintos = new Set(filas.map(r=>r.anio)).size;
+
+  const filasOrdenadas = filas.slice().sort((a,b)=>{
+    const claveA = claveCronologica(a), claveB = claveCronologica(b);
     if(claveA !== claveB) return claveA - claveB;
-    return a.localeCompare(b);
+    return a.nave.localeCompare(b.nave);
   });
-  const resumen = naves.map(n=>{
-    const rs = porNave[n];
+
+  const contadorEtiqueta = {};
+  const resumen = filasOrdenadas.map(r=>{
+    let etiqueta = r.nave;
+    if(conteoPorNave[r.nave] > 1){
+      const mesAbrev = MESES_ABREV[MESES_ORDEN.indexOf(r.mes)] || r.mes || '';
+      const sufijo = aniosDistintos > 1 ? `${mesAbrev}-${String(r.anio).slice(2)}` : mesAbrev;
+      const clave = r.nave+'|'+sufijo;
+      contadorEtiqueta[clave] = (contadorEtiqueta[clave]||0)+1;
+      etiqueta = contadorEtiqueta[clave] > 1 ? `${r.nave} (${sufijo}·${contadorEtiqueta[clave]})` : `${r.nave} (${sufijo})`;
+    }
     return {
-      nave:n,
-      rateContratado: avgOrNull(rs.map(r=>r.rateContratado)),
-      rateAlcanzado: avgOrNull(rs.map(r=>r.rateAlcanzado)),
-      usdProgramado: avgOrNull(rs.map(r=>r.usdProgramado)),
-      usdLogrado: avgOrNull(rs.map(r=>r.usdLogrado)),
-      tonsHrBruto: avgOrNull(rs.map(r=>r.tonsHrBruto)),
-      tonsHrNeto: avgOrNull(rs.map(r=>r.tonsHrNeto)),
-      tons: rs.reduce((a,r)=>a+(r.tons||0),0)
+      nave: etiqueta,
+      rateContratado: r.rateContratado,
+      rateAlcanzado: r.rateAlcanzado,
+      usdProgramado: r.usdProgramado,
+      usdLogrado: r.usdLogrado,
+      tonsHrBruto: r.tonsHrBruto,
+      tonsHrNeto: r.tonsHrNeto,
+      tons: r.tons||0
     };
   });
 
@@ -2299,11 +2311,12 @@ function renderExplorador(){
   const tieneTonsHr = grupoNaveChart('chartExpTonsHr', conTonsHr, 'tonsHrBruto','tonsHrNeto','Tons/Hora Bruto','Tons/Hora Neto', AZULCLARO, VERDE, v=>fmt1(v));
 
   const totalTons = filas.reduce((a,r)=>a+(r.tons||0),0);
+  const navesDistintas = Object.keys(conteoPorNave).length;
   const partes = [];
-  partes.push(`<b>${naves.length}</b> nave${naves.length!==1?'s':''} encontrada${naves.length!==1?'s':''} · <b>${fmtInt(totalTons)}</b> Tons en el filtro actual.`);
-  if(naves.length && !tieneCosto) partes.push('Sin datos de costo (USD/Ton) para esta combinación de filtros.');
-  if(naves.length && !tieneRate) partes.push('Sin datos de rate para esta combinación de filtros.');
-  document.getElementById('insightExplorador').innerHTML = naves.length
+  partes.push(`<b>${filas.length}</b> recalada${filas.length!==1?'s':''} encontrada${filas.length!==1?'s':''} (<b>${navesDistintas}</b> nave${navesDistintas!==1?'s':''} distinta${navesDistintas!==1?'s':''}) · <b>${fmtInt(totalTons)}</b> Tons en el filtro actual.`);
+  if(filas.length && !tieneCosto) partes.push('Sin datos de costo (USD/Ton) para esta combinación de filtros.');
+  if(filas.length && !tieneRate) partes.push('Sin datos de rate para esta combinación de filtros.');
+  document.getElementById('insightExplorador').innerHTML = filas.length
     ? partes.join(' ')
     : 'No se encontraron recaladas para esta combinación de filtros.';
 }
