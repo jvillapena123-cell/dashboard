@@ -2261,11 +2261,18 @@ function renderExplorador(){
     if(!porNave[r.nave]) porNave[r.nave] = [];
     porNave[r.nave].push(r);
   });
-  const mesIndex = m => { const i = MESES_ORDEN.indexOf(m); return i===-1 ? 99 : i; };
+  // Clave cronológica real: año × 12 + índice de mes, así se ordena correctamente aunque
+  // los datos mezclen varios años (ej. Noviembre 2025 debe quedar antes que Enero 2026).
+  const claveCronologica = r => {
+    const i = MESES_ORDEN.indexOf(r.mes);
+    const mesIdx = i===-1 ? 99 : i;
+    const anio = Number(r.anio) || 0;
+    return anio*12 + mesIdx;
+  };
   const naves = Object.keys(porNave).sort((a,b)=>{
-    const mesA = Math.min(...porNave[a].map(r=>mesIndex(r.mes)));
-    const mesB = Math.min(...porNave[b].map(r=>mesIndex(r.mes)));
-    if(mesA !== mesB) return mesA - mesB;
+    const claveA = Math.min(...porNave[a].map(claveCronologica));
+    const claveB = Math.min(...porNave[b].map(claveCronologica));
+    if(claveA !== claveB) return claveA - claveB;
     return a.localeCompare(b);
   });
   const resumen = naves.map(n=>{
