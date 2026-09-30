@@ -755,12 +755,13 @@
   .insight-card{
     background:linear-gradient(160deg, var(--azul-oscuro) 0%, var(--azul) 100%);
     border-radius:14px;
-    padding:20px 20px 0 20px;
+    padding:18px 18px 0 18px;
     color:var(--blanco);
     display:flex;
     flex-direction:column;
     overflow:hidden;
     box-shadow:0 6px 20px rgba(19,37,72,.18);
+    min-height:380px;
   }
   .insight-card-label{
     font-size:10.5px;
@@ -770,26 +771,28 @@
     margin-bottom:9px;
   }
   .insight-card-stat{
-    font-size:40px;
+    font-size:34px;
     font-weight:800;
     line-height:1;
-    margin-bottom:10px;
+    margin-bottom:8px;
     letter-spacing:-1px;
   }
   .insight-card-desc{
-    font-size:12px;
+    font-size:11.5px;
     color:#D7DEEC;
-    line-height:1.5;
-    margin-bottom:14px;
+    line-height:1.45;
+    margin-bottom:0;
   }
   .insight-card-desc b{
     color:var(--blanco);
   }
   .insight-card-art{
-    margin:auto -20px 0 -20px;
+    margin:14px -18px 0 -18px;
     line-height:0;
     border-radius:0 0 14px 14px;
     overflow:hidden;
+    flex:1 1 auto;
+    display:flex;
   }
   .insight-card-art svg{
     width:100%;
@@ -798,11 +801,12 @@
   }
   .insight-card-art img{
     width:100%;
-    height:140px;
+    height:100%;
+    min-height:190px;
     object-fit:cover;
-    object-position:center 40%;
+    object-position:center 45%;
     display:block;
-    filter:brightness(.94);
+    filter:brightness(.96);
   }
   @media (max-width:900px){
     .movilizado-grid{ grid-template-columns:1fr; }
@@ -2257,7 +2261,13 @@ function renderExplorador(){
     if(!porNave[r.nave]) porNave[r.nave] = [];
     porNave[r.nave].push(r);
   });
-  const naves = Object.keys(porNave).sort();
+  const mesIndex = m => { const i = MESES_ORDEN.indexOf(m); return i===-1 ? 99 : i; };
+  const naves = Object.keys(porNave).sort((a,b)=>{
+    const mesA = Math.min(...porNave[a].map(r=>mesIndex(r.mes)));
+    const mesB = Math.min(...porNave[b].map(r=>mesIndex(r.mes)));
+    if(mesA !== mesB) return mesA - mesB;
+    return a.localeCompare(b);
+  });
   const resumen = naves.map(n=>{
     const rs = porNave[n];
     return {
