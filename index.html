@@ -119,6 +119,12 @@
   .btn-update .btn-ico{
     font-size:15px;
   }
+  .btn-sobretiempo{
+    background:linear-gradient(120deg, #7A5A1E, var(--dorado));
+  }
+  .btn-sobretiempo:hover{
+    box-shadow:0 5px 16px rgba(201,162,75,.4);
+  }
   .update-hint{
     font-size:11.5px;
     color:var(--gristxt);
@@ -885,6 +891,9 @@
     <button type="button" class="btn-update" id="btnOpenUpload">
       <span class="btn-ico">⇪</span> Actualizar datos del tablero
     </button>
+    <button type="button" class="btn-update btn-sobretiempo" id="btnOpenSobretiempo">
+      <span class="btn-ico">🔒</span> Ver Sobretiempo 2026
+    </button>
     <span class="update-hint">Los archivos se cargan en una ventana aparte y no afectan la visualización mientras no los subas.</span>
   </div>
 
@@ -1115,6 +1124,64 @@
     </div>
   </section>
 
+  <!-- ================= SECCIÓN 6: SOBRETIEMPO 2026 (OCULTA, REQUIERE CLAVE) ================= -->
+  <section class="bloque sobretiempo-seccion" id="seccionSobretiempo" style="display:none;">
+    <h2 class="titulo-seccion">6&nbsp;&nbsp;·&nbsp;&nbsp;SOBRETIEMPO 2026 — Dotación TTMM Logística</h2>
+    <div class="update-bar" style="margin-bottom:18px;">
+      <label class="btn-update" for="fileSobretiempo" style="background:linear-gradient(120deg,#7A5A1E,var(--dorado)); cursor:pointer;">
+        <span class="btn-ico">⇪</span> Actualizar datos de Sobretiempo
+      </label>
+      <input type="file" id="fileSobretiempo" accept=".xlsx,.xls,.csv" style="display:none;">
+      <button type="button" class="btn-filtro-reset" id="btnCerrarSobretiempo">Ocultar sección</button>
+      <span class="update-hint" id="estadoSobretiempoUpload"></span>
+    </div>
+
+    <div class="insight" id="insightSobretiempo">Cargando indicador de sobretiempo…</div>
+    <div class="kpi-alert-row">
+      <div class="kpi-alert warn">
+        <div class="kpi-alert-valor" id="stTotalHoras">—</div>
+        <div class="kpi-alert-etiqueta">Sobretiempo Total (h)</div>
+      </div>
+      <div class="kpi-alert info">
+        <div class="kpi-alert-valor" id="stPersonasConST">—</div>
+        <div class="kpi-alert-etiqueta">Personas con Sobretiempo</div>
+      </div>
+      <div class="kpi-alert info-light">
+        <div class="kpi-alert-valor" id="stPromedioPersona">—</div>
+        <div class="kpi-alert-etiqueta">Promedio por Persona (h)</div>
+      </div>
+      <div class="kpi-alert warn">
+        <div class="kpi-alert-valor" id="stPctFinSemana">—</div>
+        <div class="kpi-alert-etiqueta">% Fin de Semana / Feriado</div>
+      </div>
+    </div>
+
+    <div class="chart-grid dos-col">
+      <div class="chart-box tall"><div class="chart-title">Sobretiempo por mes (h)</div><canvas id="chartSTPorMes"></canvas></div>
+      <div class="chart-box tall"><div class="chart-title">Distribución por tipo de día (h)</div><canvas id="chartSTTipoDia"></canvas></div>
+    </div>
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+      <div class="chart-box tall"><div class="chart-title">Sobretiempo total por persona (h)</div><canvas id="chartSTPorPersona"></canvas></div>
+    </div>
+
+    <div class="movilizado-header" style="margin-top:20px;">
+      <h3>Detalle por persona y mes</h3>
+      <p>Horas de sobretiempo acumuladas, mes a mes</p>
+    </div>
+    <div class="chart-box">
+      <table class="tabla-comparativa" id="tablaSobretiempoPersona">
+        <thead><tr id="theadSobretiempoPersona"></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="nota-pie">
+      Fuente: Dashboard Sobretiempo 2026 HTP (hoja "Resumen"). % Fin de Semana / Feriado = horas de sobretiempo en sábado, domingo
+      o feriado, sobre el total de horas de sobretiempo del período. Esta sección solo es visible al ingresar la clave de acceso
+      correspondiente y no aparece en la vista normal del tablero.
+    </div>
+  </section>
+
 
   <div class="galeria-operaciones">
     <div class="galeria-titulo">Operaciones en Terminal HTP</div>
@@ -1153,6 +1220,22 @@
     <form id="formPassword" autocomplete="off">
       <input type="password" id="inputPassword" class="password-input" placeholder="Clave de acceso" autocomplete="off">
       <div class="password-error" id="passwordError">Clave incorrecta. Intenta nuevamente.</div>
+      <button type="submit" class="btn-apply" style="margin-top:12px;">Ingresar</button>
+    </form>
+  </div>
+</div>
+
+<!-- ================= VENTANA DE CLAVE DE ACCESO — SOBRETIEMPO ================= -->
+<div class="modal-overlay" id="passwordOverlaySobretiempo">
+  <div class="modal-window password-window">
+    <div class="modal-header">
+      <h2>🔒 Sobretiempo 2026 — Acceso restringido</h2>
+      <button type="button" class="modal-close" id="btnClosePasswordSobretiempo" aria-label="Cerrar">✕</button>
+    </div>
+    <p class="sub">Esta sección contiene datos de dotación y sobretiempo por persona. Ingresa la clave de acceso para verla.</p>
+    <form id="formPasswordSobretiempo" autocomplete="off">
+      <input type="password" id="inputPasswordSobretiempo" class="password-input" placeholder="Clave de acceso" autocomplete="off">
+      <div class="password-error" id="passwordErrorSobretiempo">Clave incorrecta. Intenta nuevamente.</div>
       <button type="submit" class="btn-apply" style="margin-top:12px;">Ingresar</button>
     </form>
   </div>
@@ -1287,6 +1370,36 @@ function cargarDeStorage(campo){
 }
 
 let DATA = {
+  sobretiempo: {
+    porMes: [
+      {mes:'Junio', horas:0, personas:11, conST:0, promedio:0, pctFinSemana:0, jefesTurno:0, operadores:0, difPlanilla:0},
+      {mes:'Julio', horas:310, personas:11, conST:11, promedio:28.181818181818183, pctFinSemana:0.9838709677419355, jefesTurno:27.5, operadores:28.4375, difPlanilla:4.5},
+      {mes:'Agosto', horas:184.9, personas:11, conST:11, promedio:16.80909090909091, pctFinSemana:0.8518117901568415, jefesTurno:27.46666666666667, operadores:12.8125, difPlanilla:7.5},
+      {mes:'Septiembre', horas:180, personas:12, conST:11, promedio:15, pctFinSemana:0.9166666666666666, jefesTurno:18.666666666666668, operadores:13.777777777777779, difPlanilla:0}
+    ],
+    porPersona: [
+      {persona:'Juan Sanhueza', cargo:'Jefe Turno', jun:0, jul:30, ago:25.4, sep:22.5, total:77.9},
+      {persona:'Hugo Peña', cargo:'Jefe Turno', jun:0, jul:22.5, ago:34.5, sep:15, total:72},
+      {persona:'Alejandro Ortiz', cargo:'Jefe Turno', jun:0, jul:30, ago:22.5, sep:18.5, total:71},
+      {persona:'Juan Cifuentes', cargo:'Operador Mantenedor', jun:0, jul:32, ago:15, sep:22.5, total:69.5},
+      {persona:'Mauricio Vergara', cargo:'Operador Mantenedor', jun:0, jul:31, ago:15, sep:22.5, total:68.5},
+      {persona:'Fernando Sanchez', cargo:'Operador Mantenedor', jun:0, jul:30, ago:20, sep:15, total:65},
+      {persona:'Diego Tobar', cargo:'Operador Mantenedor', jun:0, jul:32, ago:7.5, sep:19, total:58.5},
+      {persona:'Victor Mardones', cargo:'Operador Mantenedor', jun:0, jul:30, ago:7.5, sep:15, total:52.5},
+      {persona:'Marcelo Sanhueza', cargo:'Operador Mantenedor', jun:0, jul:30, ago:15, sep:7.5, total:52.5},
+      {persona:'Jose Zapata', cargo:'Operador Mantenedor', jun:0, jul:27.5, ago:15, sep:7.5, total:50},
+      {persona:'Gonzalo Segura', cargo:'Operador Mantenedor', jun:0, jul:15, ago:7.5, sep:15, total:37.5},
+      {persona:'Javier Estrada', cargo:'Operador Mantenedor', jun:null, jul:null, ago:null, sep:0, total:0}
+    ],
+    porTipoDia: [
+      {mes:'Junio', habiles:0, finSemana:0, feriado:0, total:0},
+      {mes:'Julio', habiles:5, finSemana:222.5, feriado:82.5, total:310},
+      {mes:'Agosto', habiles:27.400000000000006, finSemana:97.5, feriado:60, total:184.9},
+      {mes:'Septiembre', habiles:15, finSemana:165, feriado:0, total:180}
+    ],
+    totalHoras: 674.9,
+    totalConDifPlanilla: 12
+  },
   recaladas: [{"anio": 2025, "mes": null, "nave": "Arpeggio", "cliente": "HUACHIPATO", "producto": "coke", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Enero", "nave": "LINKEN", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15110.72, "rateContratado": 10000, "rateAlcanzado": 11227.78105208932, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 467.8242105037217, "tonsHrNeto": 467.8242105037217}, {"anio": 2025, "mes": "Enero", "nave": "BUNUM XCEL", "cliente": "HUACHIPATO", "producto": "Caliza Gllo.", "tons": 30025, "rateContratado": 9000, "rateAlcanzado": 9471.193866348021, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 394.63307776450085, "tonsHrNeto": 394.63307776450085}, {"anio": 2025, "mes": "Enero", "nave": "ELITE FAITH", "cliente": "ENAP", "producto": "Pet Coke", "tons": 6058.7, "rateContratado": 6000, "rateAlcanzado": 7653.0947365138645, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 318.87894735474435, "tonsHrNeto": 318.87894735474435}, {"anio": 2025, "mes": "Enero", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 23710.12, "rateContratado": 10000, "rateAlcanzado": 11979.85061032079, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 499.16044209669957, "tonsHrNeto": 499.16044209669957}, {"anio": 2025, "mes": "Febrero", "nave": "GINGA JAGUAR", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10095.15, "rateContratado": 10000, "rateAlcanzado": 11592.517895208215, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 483.02157896700896, "tonsHrNeto": 483.02157896700896}, {"anio": 2025, "mes": "Febrero", "nave": "BOCHEN LONDON", "cliente": "OXY", "producto": "Soda Caustica", "tons": 16021.55, "rateContratado": 10000, "rateAlcanzado": 10145.571292667193, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 422.7321371944664, "tonsHrNeto": 422.7321371944664}, {"anio": 2025, "mes": "Marzo", "nave": "ERNST OLDENDORFF", "cliente": "HUACHIPATO", "producto": "Pellets + Granza", "tons": 32465.18, "rateContratado": 6000, "rateAlcanzado": 9408.303320430703, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 392.01263835127935, "tonsHrNeto": 392.01263835127935}, {"anio": 2025, "mes": "Marzo", "nave": "QUELLONINA", "cliente": "ENAP", "producto": "Estructura ENAP", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Marzo", "nave": "QUELLONINA", "cliente": "ENAP", "producto": "Estructura ENAP", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Marzo", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 25012.99, "rateContratado": 10000, "rateAlcanzado": 11305.305762704429, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 471.0544067793512, "tonsHrNeto": 471.0544067793512}, {"anio": 2025, "mes": "Abril", "nave": "CENTINELA", "cliente": "NUTRISCO", "producto": "Inauguración", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Abril", "nave": "STAR THETIS", "cliente": "HUACHIPATO", "producto": "coke", "tons": 38510, "rateContratado": 3600, "rateAlcanzado": 4501.1688311462885, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 187.54870129776202, "tonsHrNeto": 187.54870129776202}, {"anio": 2025, "mes": "Abril", "nave": "CENTURION", "cliente": "HUACHIPATO", "producto": "Laminilla", "tons": 15869.8, "rateContratado": 6000, "rateAlcanzado": 8417.131491561122, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 350.7138121483801, "tonsHrNeto": 350.7138121483801}, {"anio": 2025, "mes": "Abril", "nave": "GINGA JAGUAR", "cliente": "OXY", "producto": "Soda Caustica", "tons": 11231.07, "rateContratado": 10000, "rateAlcanzado": 10447.50697677247, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 435.31279069885295, "tonsHrNeto": 435.31279069885295}, {"anio": 2025, "mes": "Abril", "nave": "AFRICAN PIPIT", "cliente": "ARAUCO", "producto": "Caliza Arauco", "tons": 27531.97, "rateContratado": 9000, "rateAlcanzado": 13647.516970800265, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 568.646540450011, "tonsHrNeto": 568.646540450011}, {"anio": 2025, "mes": "Mayo", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 25214.66, "rateContratado": 10000, "rateAlcanzado": 10767.827615522303, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 448.65948398009596, "tonsHrNeto": 448.65948398009596}, {"anio": 2025, "mes": "Mayo", "nave": "TOMINI SIROCCO", "cliente": "IANSA", "producto": "Carbón + Coque (Iansa)", "tons": 0, "rateContratado": 6000, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Mayo", "nave": "GEENWICH PARK", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15956.38, "rateContratado": 10000, "rateAlcanzado": 11004.398620656524, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 458.51660919402184, "tonsHrNeto": 458.51660919402184}, {"anio": 2025, "mes": "Mayo", "nave": "EPIC TRADER", "cliente": "HUACHIPATO", "producto": "coke", "tons": 38914.75, "rateContratado": 4500, "rateAlcanzado": 5886.264705896749, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 245.26102941236454, "tonsHrNeto": 245.26102941236454}, {"anio": 2025, "mes": "Junio", "nave": "BOW PRECISION", "cliente": "OXY", "producto": "Soda Caustica", "tons": 12325.5, "rateContratado": 10000, "rateAlcanzado": 13031.360352850623, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 542.9733480354427, "tonsHrNeto": 542.9733480354427}, {"anio": 2025, "mes": "Junio", "nave": "GINGA BOBCAT", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10734.3, "rateContratado": 10000, "rateAlcanzado": 10142.64755939447, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 422.6103149747696, "tonsHrNeto": 422.6103149747696}, {"anio": 2025, "mes": "Julio", "nave": "PAM  QUERELEMA", "cliente": "ALIMAR", "producto": "Carga General", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Julio", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 24991.64, "rateContratado": 10000, "rateAlcanzado": 8400.55025210495, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 126.60403748735776, "tonsHrNeto": 126.60403748735776}, {"anio": 2025, "mes": "Agosto", "nave": "BOW PERSISTENT", "cliente": "OXY", "producto": "Soda Caustica", "tons": 6908.19, "rateContratado": 10000, "rateAlcanzado": 10836.379607892608, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 451.51581699552537, "tonsHrNeto": 451.51581699552537}, {"anio": 2025, "mes": "Agosto", "nave": "GINGA GRUTTO", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10239.48, "rateContratado": 10000, "rateAlcanzado": 12165.72000093951, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 506.9050000391462, "tonsHrNeto": 506.9050000391462}, {"anio": 2025, "mes": "Agosto", "nave": "INDIAN WALKER", "cliente": "ARAUCO", "producto": "Caliza Arauco", "tons": 27516.59, "rateContratado": 6000, "rateAlcanzado": 6422.024246390885, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 267.58434359962024, "tonsHrNeto": 267.58434359962024}, {"anio": 2025, "mes": "Agosto", "nave": "NORD SINGAPORE", "cliente": "AZA", "producto": "Chatarra AZA", "tons": 20889.65, "rateContratado": 2500, "rateAlcanzado": 2742.123609829609, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 114.25515040956705, "tonsHrNeto": 114.25515040956705}, {"anio": 2025, "mes": "Septiembre", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 24375.82, "rateContratado": 10000, "rateAlcanzado": 11337.589767472555, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 472.3995736446898, "tonsHrNeto": 472.3995736446898}, {"anio": 2025, "mes": "Septiembre", "nave": "PAM VICHUQUEN II", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM VICHUQUEN II", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 12, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Pesca Fresca", "tons": 17.82, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON BORIS", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "XENA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 12997.78, "rateContratado": 10000, "rateAlcanzado": 11510.950848347513, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 479.6229520144797, "tonsHrNeto": 479.6229520144797}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ALFONSO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 10, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Octubre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "OSLO BULK", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 4948.59, "rateContratado": 3000, "rateAlcanzado": 2778.1574736842103, "usdProgramado": 65.5, "usdLogrado": 7.26620695230396, "tonsHrBruto": 115.75656140350877, "tonsHrNeto": 115.75656140350877}, {"anio": 2025, "mes": "Noviembre", "nave": "GINGA BLUE SHARK", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10162.37, "rateContratado": 10000, "rateAlcanzado": 13400.932746129836, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 558.3721977554098, "tonsHrNeto": 558.3721977554098}, {"anio": 2025, "mes": "Noviembre", "nave": "BIANCA", "cliente": "HUACHIPATO", "producto": "coke", "tons": 27052.54, "rateContratado": 4500, "rateAlcanzado": 6110.691388141559, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 254.612141172565, "tonsHrNeto": 254.612141172565}, {"anio": 2025, "mes": "Noviembre", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 22735.6, "rateContratado": 10000, "rateAlcanzado": 12045.350993396056, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 501.88962472483564, "tonsHrNeto": 501.88962472483564}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM VICHUQUEN II", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 8, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON MANUEL", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM VICHUQUEN II", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Noviembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "BARCAZA MELLINA II", "cliente": "Sin Cliente", "producto": "Defensa Muelle ENAP", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "BOCHEM WALVIS BAY", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15697.99, "rateContratado": 10000, "rateAlcanzado": 11922.522531390816, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 496.77177214128403, "tonsHrNeto": 496.77177214128403}, {"anio": 2025, "mes": "Diciembre", "nave": "BARCAZA MELLINA II", "cliente": "Sin Cliente", "producto": "Defensa Muelle ENAP", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM VESTERVEG", "cliente": "Sin Cliente", "producto": "Mov. Grúa PAM", "tons": 8, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM QUERELEMA", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 3, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "PETREL", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15814.91, "rateContratado": 10000, "rateAlcanzado": 11935.784150969614, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 497.3243396237339, "tonsHrNeto": 497.3243396237339}, {"anio": 2025, "mes": "Diciembre", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2025, "mes": "Diciembre", "nave": "BUNUN BENEFIT", "cliente": "ARAUCO", "producto": "Caliza Arauco", "tons": 27506.05, "rateContratado": 6000, "rateAlcanzado": 6823.206201550387, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 284.3002583979328, "tonsHrNeto": 284.3002583979328}, {"anio": 2026, "mes": "Enero", "nave": "CONDOR MAGALLANES", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5439.08, "rateContratado": 3000, "rateAlcanzado": 2700.7825655053152, "usdProgramado": 5.5, "usdLogrado": 5.1948164542801, "tonsHrBruto": 112.5326068960548, "tonsHrNeto": 112.5326068960548}, {"anio": 2026, "mes": "Enero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Sin Producto", "tons": 30.28, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Enero", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Chatarra LAMPA", "tons": 14008.53, "rateContratado": 3500, "rateAlcanzado": 3645.1541741497185, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 151.88142392290493, "tonsHrNeto": 151.88142392290493}, {"anio": 2026, "mes": "Enero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 14.71, "rateContratado": null, "rateAlcanzado": 114.46832434665416, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 4.769513514443923, "tonsHrNeto": 4.769513514443923}, {"anio": 2026, "mes": "Enero", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 25039.79, "rateContratado": 10000, "rateAlcanzado": 11775.735440822944, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 490.65564336762264, "tonsHrNeto": 490.65564336762264}, {"anio": 2026, "mes": "Enero", "nave": "PAM VENTISQUERO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 18, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Enero", "nave": "PAM VENTISQUERO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 18, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Enero", "nave": "ANTHEIA", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5398.04, "rateContratado": 3000, "rateAlcanzado": 3238.8222001319673, "usdProgramado": 5.5, "usdLogrado": 4.64943030731799, "tonsHrBruto": 134.95092500549862, "tonsHrNeto": 134.95092500549862}, {"anio": 2026, "mes": "Enero", "nave": "PAM QUERELEMA", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 36.15, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM CRISTOBAL COLON", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PHEASANT", "cliente": "OXY", "producto": "Soda Caustica", "tons": 14436.78, "rateContratado": 10000, "rateAlcanzado": 11140.921929539863, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 464.20508039749427, "tonsHrNeto": 464.20508039749427}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 42.18, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 30.53, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM QUERELEMA", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 5, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 17.2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 27.95, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "FORTE GALAXY", "cliente": "OXY", "producto": "Soda Caustica", "tons": 7176.39, "rateContratado": 10000, "rateAlcanzado": 11637.394053468208, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 484.89141889450866, "tonsHrNeto": 484.89141889450866}, {"anio": 2026, "mes": "Febrero", "nave": "PAM CORAL I", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM SAN JOSÉ", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 6, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM DON TITO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "PAM CORAL I", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Febrero", "nave": "DRACO FAITH", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 4663.43, "rateContratado": 3000, "rateAlcanzado": 3454.3940740777975, "usdProgramado": 5.5, "usdLogrado": 5.2045878168561, "tonsHrBruto": 143.93308641990822, "tonsHrNeto": 143.93308641990822}, {"anio": 2026, "mes": "Marzo", "nave": "PAM CORAL I", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 2, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Marzo", "nave": "MARITIME GISELA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 24652, "rateContratado": 10000, "rateAlcanzado": 12326, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 513.5833333333334, "tonsHrNeto": 513.5833333333334}, {"anio": 2026, "mes": "Marzo", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Carga General", "tons": 42.81, "rateContratado": null, "rateAlcanzado": 189.69895388216753, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 7.904123078423647, "tonsHrNeto": 7.904123078423647}, {"anio": 2026, "mes": "Marzo", "nave": "PAM DON TITO", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 7, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Marzo", "nave": "JIU XU", "cliente": "ENAP", "producto": "Pet Coke", "tons": 11007.43, "rateContratado": 4000, "rateAlcanzado": 3787.5027956989247, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 157.8126164874552, "tonsHrNeto": 157.8126164874552}, {"anio": 2026, "mes": "Abril", "nave": "ROCIO", "cliente": "Sin Cliente", "producto": "Flexibles", "tons": 10, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "ROCIO", "cliente": "Sin Cliente", "producto": "Flexibles", "tons": 10, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19916.3, "rateContratado": 9000, "rateAlcanzado": 10116.215873015874, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 421.5089947089947, "tonsHrNeto": 421.5089947089947}, {"anio": 2026, "mes": "Abril", "nave": "ROCIO", "cliente": "Sin Cliente", "producto": "Flexibles", "tons": 12, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "ROCIO", "cliente": "Sin Cliente", "producto": "Flexibles", "tons": 12, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "MOCKINGBIRD", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15392, "rateContratado": 10000, "rateAlcanzado": 10554.514285960027, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 439.7714285816678, "tonsHrNeto": 439.7714285816678}, {"anio": 2026, "mes": "Abril", "nave": "DON MANUEL", "cliente": "Sin Cliente", "producto": "Mov. Redes", "tons": 10, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Abril", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19232.62, "rateContratado": null, "rateAlcanzado": 10550.468023250178, "usdProgramado": null, "usdLogrado": 1350.5064243860559, "tonsHrBruto": 439.60283430209074, "tonsHrNeto": 439.60283430209074}, {"anio": 2026, "mes": "Abril", "nave": "PATAGONIA", "cliente": "ARAUCO", "producto": "Caliza Arauco", "tons": 27327.97, "rateContratado": 12000, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 3564.517825509615, "tonsHrNeto": 3564.517825509615}, {"anio": 2026, "mes": "Mayo", "nave": "CENA FAITH", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5317.23, "rateContratado": 3000, "rateAlcanzado": 3093.658181818182, "usdProgramado": 5.5, "usdLogrado": 5.07504533379724, "tonsHrBruto": 128.90242424242425, "tonsHrNeto": 128.90242424242425}, {"anio": 2026, "mes": "Mayo", "nave": "CAIFU CHAO", "cliente": "OXY", "producto": "Soda Caustica", "tons": 13489.6, "rateContratado": 10000, "rateAlcanzado": 10343.460191389371, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 430.9775079745571, "tonsHrNeto": 430.9775079745571}, {"anio": 2026, "mes": "Mayo", "nave": "RV METEOR", "cliente": "Sin Cliente", "producto": "Sin Carga", "tons": 0, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Mayo", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19365.04, "rateContratado": 9000, "rateAlcanzado": 10808.394418399817, "usdProgramado": null, "usdLogrado": 1200.998480498553, "tonsHrBruto": 450.3497674333258, "tonsHrNeto": 450.3497674333258}, {"anio": 2026, "mes": "Mayo", "nave": "BOW PERFORMER", "cliente": "OXY", "producto": "Soda Caustica", "tons": 10271.67, "rateContratado": 10000, "rateAlcanzado": 10718.26017315353, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 446.5941738813971, "tonsHrNeto": 446.5941738813971}, {"anio": 2026, "mes": "Mayo", "nave": "COMPAS MARS", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 15, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Mayo", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19374.2, "rateContratado": null, "rateAlcanzado": 9963.874285411872, "usdProgramado": null, "usdLogrado": 1227.6637486967204, "tonsHrBruto": 415.161428558828, "tonsHrNeto": 415.161428558828}, {"anio": 2026, "mes": "Mayo", "nave": "GOOFY (A)", "cliente": "HUACHIPATO", "producto": "Finos de Mineral", "tons": 19800.34, "rateContratado": 8000, "rateAlcanzado": 12369.843644582743, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 515.4101518576142, "tonsHrNeto": 515.4101518576142}, {"anio": 2026, "mes": "Mayo", "nave": "GINGA MAYA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 6105.25, "rateContratado": 10000, "rateAlcanzado": 10617.824347745473, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 442.409347822728, "tonsHrNeto": 442.409347822728}, {"anio": 2026, "mes": "Mayo", "nave": "GOOFY (B)", "cliente": "HUACHIPATO", "producto": "Finos de Mineral", "tons": 21552, "rateContratado": null, "rateAlcanzado": 5522.220640678065, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 230.0925266949194, "tonsHrNeto": 230.0925266949194}, {"anio": 2026, "mes": "Mayo", "nave": "ICELAND BULKER", "cliente": "A&B", "producto": "Barras y Rollos acero", "tons": 10272.84, "rateContratado": 3500, "rateAlcanzado": 1610.548677169843, "usdProgramado": 5.5, "usdLogrado": 9.2, "tonsHrBruto": 67.10619488207679, "tonsHrNeto": 67.10619488207679}, {"anio": 2026, "mes": "Junio", "nave": "BALSA 84", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5164.58, "rateContratado": 3000, "rateAlcanzado": 1980.5579761025706, "usdProgramado": 5.5, "usdLogrado": 4.22952987970508, "tonsHrBruto": 82.52324900427377, "tonsHrNeto": 82.52324900427377}, {"anio": 2026, "mes": "Junio", "nave": "GINGA GRUTTO", "cliente": "OXY", "producto": "Soda Caustica", "tons": 9181.42, "rateContratado": 10000, "rateAlcanzado": 10443.3213265936, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 435.13838860806663, "tonsHrNeto": 435.13838860806663}, {"anio": 2026, "mes": "Junio", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 15442.49, "rateContratado": 10000, "rateAlcanzado": 10084.888816326531, "usdProgramado": null, "usdLogrado": 1563.608981092811, "tonsHrBruto": 420.2037006802721, "tonsHrNeto": 420.2037006802721}, {"anio": 2026, "mes": "Junio", "nave": "PAM DON ENRIQUE", "cliente": "Sin Cliente", "producto": "Carga General", "tons": 4, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Junio", "nave": "SHAMROCK MERCURY", "cliente": "OXY", "producto": "Soda Caustica", "tons": 15004, "rateContratado": 10000, "rateAlcanzado": 11183.105589815481, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 465.9627329089784, "tonsHrNeto": 465.9627329089784}, {"anio": 2026, "mes": "Julio", "nave": "DRACO FAITH", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5801, "rateContratado": 3000, "rateAlcanzado": 3458.981366319565, "usdProgramado": 5.5, "usdLogrado": 4.84102396138597, "tonsHrBruto": 144.12422359664856, "tonsHrNeto": 144.12422359664856}, {"anio": 2026, "mes": "Julio", "nave": "SPARROWHAWK", "cliente": "OXY", "producto": "Soda Caustica", "tons": 5709.5, "rateContratado": 10000, "rateAlcanzado": 3954.6320346360208, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 164.77633477650085, "tonsHrNeto": 164.77633477650085}, {"anio": 2026, "mes": "Julio", "nave": "SPARROWHAWK", "cliente": "OXY", "producto": "Soda Caustica", "tons": 5709.5, "rateContratado": 10000, "rateAlcanzado": 9649.859154446995, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 402.07746476862474, "tonsHrNeto": 402.07746476862474}, {"anio": 2026, "mes": "Julio", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Pertrechos Guarello", "tons": 20, "rateContratado": null, "rateAlcanzado": null, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": null, "tonsHrNeto": null}, {"anio": 2026, "mes": "Julio", "nave": "RUI YUAN", "cliente": "HUACHIPATO", "producto": "Plate Iron", "tons": 6163.99, "rateContratado": 3500, "rateAlcanzado": 3579.090967794018, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 149.12879032475075, "tonsHrNeto": 149.12879032475075}, {"anio": 2026, "mes": "Julio", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 18571.25, "rateContratado": 9000, "rateAlcanzado": 9279.181124164568, "usdProgramado": null, "usdLogrado": 1044.8570451638957, "tonsHrBruto": 386.63254684019034, "tonsHrNeto": 386.63254684019034}, {"anio": 2026, "mes": "Julio", "nave": "XENA", "cliente": "OXY", "producto": "Soda Caustica", "tons": 3836.36, "rateContratado": 10000, "rateAlcanzado": 11093.094940708143, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 462.2122891961726, "tonsHrNeto": 462.2122891961726}, {"anio": 2026, "mes": "Julio", "nave": "BOW PERSISTENT", "cliente": "OXY", "producto": "Soda Caustica", "tons": 5775, "rateContratado": 10000, "rateAlcanzado": 11647.05882436118, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 485.2941176817158, "tonsHrNeto": 485.2941176817158}, {"anio": 2026, "mes": "Agosto", "nave": "GINGA PRETIGE", "cliente": "OXY", "producto": "Soda Caustica", "tons": 12000, "rateContratado": 10000, "rateAlcanzado": 13333.333333311775, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 555.5555555546573, "tonsHrNeto": 555.5555555546573}, {"anio": 2026, "mes": "Agosto", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 14726, "rateContratado": 9000, "rateAlcanzado": 9179.844155649851, "usdProgramado": null, "usdLogrado": 1308.070618751974, "tonsHrBruto": 382.4935064854105, "tonsHrNeto": 382.4935064854105}, {"anio": 2026, "mes": "Agosto", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 4966.22, "rateContratado": 9000, "rateAlcanzado": 11002.087386881436, "usdProgramado": null, "usdLogrado": 1308.070618751974, "tonsHrBruto": 458.42030778672654, "tonsHrNeto": 458.42030778672654}, {"anio": 2026, "mes": "Agosto", "nave": "MAPLE GRACE", "cliente": "ACEROS AREQUIPA", "producto": "Barras y Rollos acero", "tons": 5429.31, "rateContratado": 3000, "rateAlcanzado": 3602.86009226834, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 150.11917051118084, "tonsHrNeto": 150.11917051118084}, {"anio": 2026, "mes": "Agosto", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19589.77, "rateContratado": 9000, "rateAlcanzado": 9727.335558648025, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 405.305648277001, "tonsHrNeto": 405.305648277001}, {"anio": 2026, "mes": "Agosto", "nave": "BOCHEM CALLAO", "cliente": "OXY", "producto": "Soda Caustica", "tons": 18022, "rateContratado": 10000, "rateAlcanzado": 11689.945945964337, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 487.08108108184734, "tonsHrNeto": 487.08108108184734}, {"anio": 2026, "mes": "Septiembre", "nave": "KARVUNA", "cliente": "HUACHIPATO", "producto": "Caliza", "tons": 19623.23, "rateContratado": 10000, "rateAlcanzado": 10889.191213858177, "usdProgramado": null, "usdLogrado": null, "tonsHrBruto": 453.716300577424, "tonsHrNeto": 453.716300577424}],
 
   karvunaRates: {
@@ -2254,6 +2367,142 @@ function grupoNaveChart(id, items, campoA, campoB, labelA, labelB, colorA, color
   return true;
 }
 
+/* =====================================================================
+   RENDER SECCIÓN 6 · SOBRETIEMPO 2026 (sección con clave de acceso propia)
+===================================================================== */
+function renderSobretiempo(){
+  const d = DATA.sobretiempo;
+  if(!d) return;
+
+  // KPIs — usa el último mes con sobretiempo real registrado
+  const mesesConDatos = d.porMes.filter(m=>m.personas>0);
+  const ultimoMes = mesesConDatos[mesesConDatos.length-1] || d.porMes[d.porMes.length-1];
+  document.getElementById('stTotalHoras').textContent = fmt1(d.totalHoras);
+  document.getElementById('stPersonasConST').textContent = fmtInt(ultimoMes.conST);
+  document.getElementById('stPromedioPersona').textContent = fmt1(ultimoMes.promedio);
+  document.getElementById('stPctFinSemana').textContent = fmtPct(ultimoMes.pctFinSemana);
+
+  // Gráfico: Sobretiempo por mes
+  barLine('chartSTPorMes', d.porMes.map(m=>m.mes), [
+    {label:'Sobretiempo (h)', data: d.porMes.map(m=>Math.round(m.horas*10)/10), backgroundColor:NARANJA}
+  ], null, v=>fmt1(v));
+
+  // Gráfico: Distribución por tipo de día (apilado)
+  destroy('chartSTTipoDia');
+  const ctxTD = document.getElementById('chartSTTipoDia').getContext('2d');
+  charts['chartSTTipoDia'] = new Chart(ctxTD, {
+    type:'bar',
+    data:{
+      labels: d.porTipoDia.map(m=>m.mes),
+      datasets:[
+        {label:'Días hábiles', data: d.porTipoDia.map(m=>Math.round(m.habiles*10)/10), backgroundColor:AZUL, stack:'td'},
+        {label:'Fin de semana', data: d.porTipoDia.map(m=>Math.round(m.finSemana*10)/10), backgroundColor:AZULCLARO, stack:'td'},
+        {label:'Feriado', data: d.porTipoDia.map(m=>Math.round(m.feriado*10)/10), backgroundColor:ROJO, stack:'td'}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:9.5}}}, datalabels:{display:false}},
+      scales:{
+        y:{beginAtZero:true, stacked:true, ticks:{font:{size:9}}},
+        x:{stacked:true, ticks:{font:{size:9.5}}}
+      }
+    }
+  });
+
+  // Gráfico: Total por persona (ordenado descendente)
+  const personasOrdenadas = d.porPersona.slice().sort((a,b)=>b.total-a.total);
+  singleBar('chartSTPorPersona', personasOrdenadas.map(p=>p.persona), personasOrdenadas.map(p=>p.total), NARANJA, fmt1);
+
+  // Tabla por persona y mes
+  const mesesCols = d.porMes.map(m=>m.mes.slice(0,3));
+  document.getElementById('theadSobretiempoPersona').innerHTML =
+    `<th>Persona</th><th>Cargo</th>${mesesCols.map(m=>`<th>${m}</th>`).join('')}<th>Total</th>`;
+  const tbody = document.querySelector('#tablaSobretiempoPersona tbody');
+  tbody.innerHTML = personasOrdenadas.map(p=>{
+    const valores = [p.jun,p.jul,p.ago,p.sep].map(v=> v==null ? '—' : fmt1(v));
+    return `<tr><td>${p.persona}</td><td style="text-align:left;">${p.cargo}</td>${valores.map(v=>`<td>${v}</td>`).join('')}<td style="font-weight:800;">${fmt1(p.total)}</td></tr>`;
+  }).join('');
+
+  // Insight
+  const jefesProm = ultimoMes.jefesTurno, operadoresProm = ultimoMes.operadores;
+  document.getElementById('insightSobretiempo').innerHTML =
+    `<b>INSIGHT SOBRETIEMPO ·</b> ${d.totalHoras.toFixed(0)} horas acumuladas en el período. En ${ultimoMes.mes}, ${ultimoMes.conST} de ${ultimoMes.personas} personas de la dotación hicieron sobretiempo ` +
+    `(promedio ${fmt1(ultimoMes.promedio)} h/persona), con jefes de turno promediando ${fmt1(jefesProm)} h y operadores ${fmt1(operadoresProm)} h. ` +
+    `El ${fmtPct(ultimoMes.pctFinSemana)} del sobretiempo de ${ultimoMes.mes} cayó en fin de semana o feriado.`;
+}
+
+/* ---------- Parser: Sobretiempo (hoja Resumen) ---------- */
+function parseSobretiempo(wb){
+  const sn = wb.SheetNames.find(n=>n.toLowerCase().includes('resumen')) || wb.SheetNames[0];
+  const matrix = sheetToMatrix(wb.Sheets[sn]);
+  const hr1 = findHeaderRow(matrix, ['mes','sobretiempo']);
+  if(hr1===-1) throw new Error('No se encontró la tabla "Sobretiempo por mes" en la hoja Resumen.');
+  const porMes = [];
+  for(let r=hr1+1; r<matrix.length; r++){
+    const row = matrix[r];
+    const mes = row[1];
+    if(mes==null || String(mes).trim()==='') break;
+    if(String(mes).toUpperCase().includes('TOTAL')) break;
+    porMes.push({
+      mes: String(mes).trim(),
+      horas: Number(row[2])||0,
+      personas: Number(row[3])||0,
+      conST: Number(row[4])||0,
+      promedio: Number(row[5])||0,
+      pctFinSemana: Number(row[6])||0,
+      jefesTurno: Number(row[7])||0,
+      operadores: Number(row[8])||0,
+      difPlanilla: Number(row[9])||0
+    });
+  }
+
+  const hr2 = findHeaderRow(matrix, ['persona','cargo']);
+  const porPersona = [];
+  if(hr2>-1){
+    const mesesCols = MESES_ABREV.map(m=>m.toLowerCase());
+    for(let r=hr2+1; r<matrix.length; r++){
+      const row = matrix[r];
+      const persona = row[1];
+      if(persona==null || String(persona).trim()==='') break;
+      if(String(persona).toUpperCase().includes('TOTAL')) break;
+      const val = v => (v==='—' || v==null) ? null : Number(v)||0;
+      porPersona.push({
+        persona: String(persona).trim(),
+        cargo: row[2] || '',
+        jun: val(row[3]), jul: val(row[4]), ago: val(row[5]), sep: val(row[6]),
+        total: Number(row[7])||0
+      });
+    }
+  }
+
+  const hr3 = findHeaderRow(matrix, ['días hábiles','fin de semana']);
+  const porTipoDia = [];
+  if(hr3>-1){
+    for(let r=hr3+1; r<matrix.length; r++){
+      const row = matrix[r];
+      const mes = row[1];
+      if(mes==null || String(mes).trim()==='') break;
+      if(String(mes).toUpperCase().includes('TOTAL')) break;
+      porTipoDia.push({
+        mes: String(mes).trim(),
+        habiles: Number(row[2])||0,
+        finSemana: Number(row[3])||0,
+        feriado: Number(row[4])||0,
+        total: Number(row[5])||0
+      });
+    }
+  }
+
+  const totalHoras = porMes.reduce((a,m)=>a+m.horas,0);
+  return {
+    porMes: porMes.length ? porMes : DATA.sobretiempo.porMes,
+    porPersona: porPersona.length ? porPersona : DATA.sobretiempo.porPersona,
+    porTipoDia: porTipoDia.length ? porTipoDia : DATA.sobretiempo.porTipoDia,
+    totalHoras: totalHoras || DATA.sobretiempo.totalHoras
+  };
+}
+
 function renderExplorador(){
   const filas = obtenerFilasFiltradas();
 
@@ -2336,7 +2585,7 @@ function restaurarDesdeStorage(){
     cppt:'estado-cppt', cierres:'estado-cierres', naves:'estado-naves', rate:'estado-rate',
     seguridad:'estado-seguridad', ocupacion:'estado-ocupacion', karvunaDetenciones:'estado-karvunadet'
   };
-  const camposSinEstadoPropio = ['tonelaje','acerosAB','karvunaRates','navesStats','recaladas']; // se restauran junto con 'rate'
+  const camposSinEstadoPropio = ['tonelaje','acerosAB','karvunaRates','navesStats','recaladas','sobretiempo']; // se restauran sin ventana de estado propia
   [...Object.keys(camposConEstado), ...camposSinEstadoPropio].forEach(campo=>{
     const guardado = cargarDeStorage(campo);
     if(guardado!=null) DATA[campo] = guardado;
@@ -3181,7 +3430,77 @@ document.getElementById('formPassword').addEventListener('submit', e => {
 });
 
 document.addEventListener('keydown', e => {
-  if(e.key === 'Escape'){ closeModal(); closePasswordModal(); }
+  if(e.key === 'Escape'){ closeModal(); closePasswordModal(); closePasswordModalSobretiempo(); }
+});
+
+/* =====================================================================
+   SECCIÓN SOBRETIEMPO — clave de acceso independiente
+===================================================================== */
+const CLAVE_SOBRETIEMPO = 'SOBRETIEMPO2026'; // ← cambia esta clave por la que prefieras
+
+const passwordOverlaySobretiempo = document.getElementById('passwordOverlaySobretiempo');
+const inputPasswordSobretiempo = document.getElementById('inputPasswordSobretiempo');
+const passwordErrorSobretiempo = document.getElementById('passwordErrorSobretiempo');
+const seccionSobretiempo = document.getElementById('seccionSobretiempo');
+let sobretiempoDesbloqueado = false;
+
+function openPasswordModalSobretiempo(){
+  passwordErrorSobretiempo.classList.remove('show');
+  inputPasswordSobretiempo.value = '';
+  passwordOverlaySobretiempo.classList.add('open');
+  setTimeout(()=>inputPasswordSobretiempo.focus(), 50);
+}
+function closePasswordModalSobretiempo(){ passwordOverlaySobretiempo.classList.remove('open'); }
+
+function mostrarSeccionSobretiempo(){
+  seccionSobretiempo.style.display = '';
+  renderSobretiempo();
+  setTimeout(()=> {
+    if(typeof seccionSobretiempo.scrollIntoView === 'function'){
+      seccionSobretiempo.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  }, 100);
+}
+
+document.getElementById('btnOpenSobretiempo').addEventListener('click', () => {
+  if(sobretiempoDesbloqueado){ mostrarSeccionSobretiempo(); } else { openPasswordModalSobretiempo(); }
+});
+document.getElementById('btnClosePasswordSobretiempo').addEventListener('click', closePasswordModalSobretiempo);
+passwordOverlaySobretiempo.addEventListener('click', e => { if(e.target === passwordOverlaySobretiempo) closePasswordModalSobretiempo(); });
+document.getElementById('formPasswordSobretiempo').addEventListener('submit', e => {
+  e.preventDefault();
+  if(inputPasswordSobretiempo.value === CLAVE_SOBRETIEMPO){
+    sobretiempoDesbloqueado = true;
+    closePasswordModalSobretiempo();
+    mostrarSeccionSobretiempo();
+  } else {
+    passwordErrorSobretiempo.classList.add('show');
+    inputPasswordSobretiempo.value = '';
+    inputPasswordSobretiempo.focus();
+  }
+});
+document.getElementById('btnCerrarSobretiempo').addEventListener('click', () => {
+  seccionSobretiempo.style.display = 'none';
+});
+document.getElementById('fileSobretiempo').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const estado = document.getElementById('estadoSobretiempoUpload');
+  if(typeof XLSX === 'undefined'){
+    estado.textContent = 'Error: la librería XLSX no cargó (revisa tu conexión a internet).';
+    return;
+  }
+  estado.textContent = 'Procesando "'+file.name+'"…';
+  try{
+    const wb = await readWorkbook(file);
+    DATA.sobretiempo = parseSobretiempo(wb);
+    guardarEnStorage('sobretiempo', DATA.sobretiempo);
+    renderSobretiempo();
+    estado.textContent = '✔ Cargado: '+file.name;
+  }catch(err){
+    console.error(err);
+    estado.textContent = 'Error: '+err.message;
+  }
 });
 
 </script>
