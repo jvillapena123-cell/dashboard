@@ -1315,6 +1315,25 @@
         <div class="chart-box tall"><div class="chart-title">% del sobretiempo por tipo de día</div><canvas id="chartSTMPie"></canvas></div>
       </div>
 
+      <div class="movilizado-header" style="margin-top:20px;">
+        <h3>Sobretiempo por Nave (cruce con Estadística de Naves)</h3>
+        <p>Horas de sobretiempo de los días en que cada nave estuvo atracada en el terminal</p>
+      </div>
+      <div class="insight" id="avisoSinDatosNaves" style="display:none;">
+        Sube el archivo <b>"Estadística Operacional de Naves"</b> en el panel principal de carga del tablero (arriba de la Sección 1)
+        para habilitar este cruce — necesita las fechas de Arribo y Zarpe de cada nave.
+      </div>
+      <div class="chart-grid" style="grid-template-columns:1fr;" id="bloqueSTPorNave">
+        <div class="chart-box tall"><div class="chart-title">Sobretiempo del mes asociado a cada nave (h)</div><canvas id="chartSTMPorNave"></canvas></div>
+      </div>
+      <div class="nota-pie">
+        Metodología: para cada día con sobretiempo registrado, se identifica qué nave(s) estaban atracadas (Arribo ≤ día ≤ Zarpe,
+        según Estadística Operacional de Naves) y se le atribuyen todas las horas de sobretiempo de ese día. Si dos naves
+        coincidieron el mismo día, ambas reciben esas horas completas (no se dividen) — por eso la suma de esta tabla puede
+        superar el total de sobretiempo del mes. "Sin nave en muelle" agrupa los días con sobretiempo sin ninguna nave atracada
+        ese día (trabajo de mantención general, por ejemplo).
+      </div>
+
       <div class="movilizado-grid" style="grid-template-columns:1fr 1fr; margin-top:8px;">
         <div class="chart-box">
           <div class="chart-title">Distribución del mes</div>
@@ -2635,6 +2654,37 @@ function renderSobretiempoTodos(d){
     `El ${fmtPct(ultimoMes.pctFinSemana)} del sobretiempo de ${ultimoMes.mes} cayó en fin de semana o feriado.`;
 }
 
+/* ---------- Cruce: Sobretiempo por Nave (usa DATA.recaladas, cargado en la sección de Estadística de Naves) ---------- */
+function calcularSobretiempoPorNave(mesNombre){
+  const diario = (DATA.sobretiempo.diario||{})[mesNombre];
+  const recaladas = (DATA.recaladas||[]).filter(r=>r.arribo && r.zarpe);
+  if(!diario || !recaladas.length) return null;
+
+  const nDias = diasEnMes(mesNombre);
+  const mesIdx = MES_A_INDICE[mesNombre];
+  const porNave = {}; // {nave: horas}
+  let horasSinNave = 0;
+
+  for(let dia=1; dia<=nDias; dia++){
+    const horasDia = diario.porDia[dia-1] || 0;
+    if(horasDia<=0) continue;
+    // Día completo en hora local (mediodía, para evitar bordes de huso horario)
+    const inicioDia = new Date(2026, mesIdx, dia, 0,0,0).getTime();
+    const finDia = new Date(2026, mesIdx, dia, 23,59,59).getTime();
+    const navesDelDia = recaladas.filter(r=>{
+      const a = new Date(r.arribo).getTime();
+      const z = new Date(r.zarpe).getTime();
+      return a <= finDia && z >= inicioDia;
+    }).map(r=>r.nave);
+    const unicas = [...new Set(navesDelDia)];
+    if(!unicas.length){ horasSinNave += horasDia; continue; }
+    unicas.forEach(n=>{ porNave[n] = (porNave[n]||0) + horasDia; });
+  }
+
+  const lista = Object.entries(porNave).map(([nave,horas])=>({nave,horas})).sort((a,b)=>b.horas-a.horas);
+  return { lista, horasSinNave };
+}
+
 function renderSobretiempoMes(d, mes){
   const resumenMes = d.porMes.find(m=>m.mes===mes);
   const tipoDiaMes = d.porTipoDia.find(m=>m.mes===mes);
@@ -2800,6 +2850,38 @@ function renderSobretiempoMes(d, mes){
   document.getElementById('insightSobretiempo').innerHTML =
     `<b>INSIGHT ${mes.toUpperCase()} ·</b> ${fmt1(resumenMes.horas)} h de sobretiempo, ${resumenMes.conST} de ${resumenMes.personas} personas de la dotación. ` +
     `Promedio ${fmt1(resumenMes.promedio)} h/persona · ${fmtPct(resumenMes.pctFinSemana)} en fin de semana o feriado.`;
+
+  // --- Cruce: Sobretiempo por Nave (usa el archivo de Estadística Operacional de Naves) ---
+  const cruceNave = calcularSobretiempoPorNave(mes);
+  const bloqueNave = document.getElementById('bloqueSTPorNave');
+  const avisoSinNaves = document.getElementById('avisoSinDatosNaves');
+  if(!cruceNave){
+    bloqueNave.style.display = 'none';
+    avisoSinNaves.style.display = '';
+  } else {
+    bloqueNave.style.display = '';
+    avisoSinNaves.style.display = 'none';
+    const lista = cruceNave.lista;
+    const labels = lista.map(x=>x.nave).concat(cruceNave.horasSinNave>0 ? ['Sin nave en muelle'] : []);
+    const valores = lista.map(x=>Math.round(x.horas*10)/10).concat(cruceNave.horasSinNave>0 ? [Math.round(cruceNave.horasSinNave*10)/10] : []);
+    const colores = lista.map(()=>NARANJA).concat(cruceNave.horasSinNave>0 ? [GRIS] : []);
+    destroy('chartSTMPorNave');
+    const ctxNave = document.getElementById('chartSTMPorNave').getContext('2d');
+    charts['chartSTMPorNave'] = new Chart(ctxNave, {
+      type:'bar',
+      data:{labels, datasets:[{label:'Sobretiempo asociado (h)', data:valores, backgroundColor:colores, borderRadius:2,
+        datalabels:{...dlBase, display:true, formatter: labelFmt(fmt1)}}]},
+      options:{
+        responsive:true,
+        layout:{padding:{top:14}},
+        plugins:{legend:{display:false}},
+        scales:{
+          y:{beginAtZero:true, ticks:{font:{size:9}}},
+          x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45}}
+        }
+      }
+    });
+  }
 }
 
 /* ---------- Parser: Sobretiempo (hoja Resumen) ---------- */
@@ -3263,6 +3345,8 @@ function parseRecaladas(wb){
   const cTonsHrBruto = colIndexByHeader(header,'tons/hr bruto');
   const cTonsHrNeto = colIndexByHeader(header,'tons/hr neto');
   const cNumero = colIndexByHeader(header,'n°') > -1 ? colIndexByHeader(header,'n°') : colIndexByHeader(header,'nº');
+  const cArribo = colIndexByHeader(header,'arribo');
+  const cZarpe = colIndexByHeader(header,'zarpe');
 
   const filasVistas = new Set();
   const recaladas = [];
@@ -3287,6 +3371,13 @@ function parseRecaladas(wb){
     const usdLog = Number(row[cUsdLog]);
     const tonsHrBruto = Number(row[cTonsHrBruto]);
     const tonsHrNeto = Number(row[cTonsHrNeto]);
+    const arriboRaw = cArribo>-1 ? row[cArribo] : null;
+    const zarpeRaw = cZarpe>-1 ? row[cZarpe] : null;
+    const aFechaISO = v => {
+      const esFecha = v!=null && Object.prototype.toString.call(v) === '[object Date]';
+      if(!esFecha || isNaN(v.getTime())) return null;
+      return v.toISOString();
+    };
     recaladas.push({
       anio: Number(y),
       mes: mes || null,
@@ -3299,7 +3390,9 @@ function parseRecaladas(wb){
       usdProgramado: isFinite(usdProg) && usdProg>0 ? usdProg : null,
       usdLogrado: isFinite(usdLog) && usdLog>0 ? usdLog : null,
       tonsHrBruto: isFinite(tonsHrBruto) && tonsHrBruto>0 ? tonsHrBruto : null,
-      tonsHrNeto: isFinite(tonsHrNeto) && tonsHrNeto>0 ? tonsHrNeto : null
+      tonsHrNeto: isFinite(tonsHrNeto) && tonsHrNeto>0 ? tonsHrNeto : null,
+      arribo: aFechaISO(arriboRaw),
+      zarpe: aFechaISO(zarpeRaw)
     });
   }
   return recaladas;
