@@ -679,6 +679,23 @@
     background:var(--gris);
     border-color:#C4CBDA;
   }
+  .btn-ver-completo{
+    background:linear-gradient(120deg,#7A5A1E,var(--dorado));
+    color:var(--blanco);
+    border:none;
+    border-radius:9px;
+    padding:11px 22px;
+    font-family:'Montserrat',Arial,sans-serif;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 3px 10px rgba(201,162,75,.3);
+    transition:.18s;
+  }
+  .btn-ver-completo:hover{
+    box-shadow:0 5px 14px rgba(201,162,75,.4);
+    transform:translateY(-1px);
+  }
   /* ---------- "Movilizado por año" — gráfico + tarjeta de insight ---------- */
   .movilizado-header{
     margin-bottom:14px;
@@ -1295,6 +1312,11 @@
         </div>
       </div>
 
+      <div style="text-align:center; margin:4px 0 18px 0;">
+        <button type="button" class="btn-ver-completo" id="btnVerSobretiempoCompleto">👁️ Ver sección completa</button>
+      </div>
+
+      <div id="sobretiempoMesDetalleCompleto" style="display:none;">
       <div class="movilizado-header" style="margin-top:8px;">
         <h3>Calendario del mes</h3>
         <p>Horas de sobretiempo por persona y día — D = descanso, C = compensado, L = licencia</p>
@@ -1368,6 +1390,7 @@
           <div class="chart-title">Hallazgos y puntos a revisar</div>
           <ul class="lista-hallazgos" id="listaHallazgosST"></ul>
         </div>
+      </div>
       </div>
     </div>
 
@@ -2737,6 +2760,8 @@ function renderSobretiempoMes(d, mes){
     return;
   }
 
+  if(typeof actualizarBotonVerCompleto === 'function') actualizarBotonVerCompleto();
+
   // --- KPIs ---
   document.getElementById('stmHoras').textContent = fmt1(resumenMes.horas);
   document.getElementById('stmPersonas').textContent = `${fmtInt(resumenMes.conST)} / ${fmtInt(resumenMes.personas)}`;
@@ -4034,6 +4059,7 @@ function closePasswordModalSobretiempo(){ passwordOverlaySobretiempo.classList.r
 
 function mostrarSeccionSobretiempo(){
   seccionSobretiempo.style.display = '';
+  sobretiempoDetalleExpandido = false;
   renderSobretiempo();
   setTimeout(()=> {
     if(typeof seccionSobretiempo.scrollIntoView === 'function'){
@@ -4041,6 +4067,21 @@ function mostrarSeccionSobretiempo(){
     }
   }, 100);
 }
+
+/* Botón "Ver sección completa" del detalle mensual — colapsado por defecto cada vez que
+   se entra a la sección; una vez expandido se mantiene así aunque se cambie de mes. */
+let sobretiempoDetalleExpandido = false;
+function actualizarBotonVerCompleto(){
+  const detalle = document.getElementById('sobretiempoMesDetalleCompleto');
+  const btn = document.getElementById('btnVerSobretiempoCompleto');
+  if(!detalle || !btn) return;
+  detalle.style.display = sobretiempoDetalleExpandido ? '' : 'none';
+  btn.textContent = sobretiempoDetalleExpandido ? '🔼 Ocultar detalle completo' : '👁️ Ver sección completa';
+}
+document.getElementById('btnVerSobretiempoCompleto').addEventListener('click', () => {
+  sobretiempoDetalleExpandido = !sobretiempoDetalleExpandido;
+  actualizarBotonVerCompleto();
+});
 
 document.getElementById('btnOpenSobretiempo').addEventListener('click', () => {
   if(sobretiempoDesbloqueado){ mostrarSeccionSobretiempo(); } else { openPasswordModalSobretiempo(); }
