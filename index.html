@@ -1214,7 +1214,7 @@
       <div class="filtro-item">
         <label>Mes seleccionado</label>
         <select id="filtroMesSobretiempo">
-          <option value="todos">Todos los meses</option>
+          <option value="todos">📊 Vista completa (todos los meses)</option>
         </select>
       </div>
       <div class="filtro-item">
@@ -4076,7 +4076,7 @@ document.getElementById('fileSobretiempo').addEventListener('change', async e =>
     DATA.sobretiempo = parseSobretiempo(wb);
     guardarEnStorage('sobretiempo', DATA.sobretiempo);
     const sel = document.getElementById('filtroMesSobretiempo');
-    sel.innerHTML = '<option value="todos">Todos los meses</option>';
+    sel.innerHTML = '<option value="todos">📊 Vista completa (todos los meses)</option>';
     delete sel.dataset.armado;
     renderSobretiempo();
     estado.textContent = '✔ Cargado: '+file.name;
