@@ -1336,6 +1336,18 @@
       <div class="chart-grid" style="grid-template-columns:1fr;" id="bloqueSTPorNaveChart">
         <div class="chart-box tall"><div class="chart-title">Sobretiempo del mes asociado a cada nave (h)</div><canvas id="chartSTMPorNave"></canvas></div>
       </div>
+
+      <div class="movilizado-header" style="margin-top:16px;">
+        <h3>Detalle de días sin nave en muelle</h3>
+        <p>Día a día, quién hizo el sobretiempo cuando no había ninguna nave atracada</p>
+      </div>
+      <div class="chart-box" id="bloqueDetalleSinNave">
+        <table class="tabla-comparativa" id="tablaDetalleSinNave">
+          <thead><tr><th>Día</th><th>Persona</th><th>Horas</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
       <div class="nota-pie">
         Metodología: para cada día con sobretiempo registrado, se identifica qué nave(s) estaban atracadas (Arribo ≤ día ≤ Zarpe,
         según Estadística Operacional de Naves) y se le atribuyen todas las horas de sobretiempo de ese día. Si dos naves
@@ -2668,6 +2680,7 @@ function renderSobretiempoTodos(d){
 function calcularSobretiempoPorNave(mesNombre){
   const diario = (DATA.sobretiempo.diario||{})[mesNombre];
   const recaladas = (DATA.recaladas||[]).filter(r=>r.arribo && r.zarpe);
+  const filasPersonas = (DATA.sobretiempo.datos||{})[mesNombre] || [];
   if(!diario || !recaladas.length) return null;
 
   const nDias = diasEnMes(mesNombre);
@@ -2675,6 +2688,7 @@ function calcularSobretiempoPorNave(mesNombre){
   const porNave = {}; // {nave: horas}
   let horasSinNave = 0;
   let horasConNave = 0; // suma por día (una sola vez por día, sin duplicar si hay 2+ naves ese día)
+  const detalleSinNave = []; // [{dia, personas:[{persona,horas}]}]
 
   for(let dia=1; dia<=nDias; dia++){
     const horasDia = diario.porDia[dia-1] || 0;
@@ -2688,7 +2702,15 @@ function calcularSobretiempoPorNave(mesNombre){
       return a <= finDia && z >= inicioDia;
     }).map(r=>r.nave);
     const unicas = [...new Set(navesDelDia)];
-    if(!unicas.length){ horasSinNave += horasDia; continue; }
+    if(!unicas.length){
+      horasSinNave += horasDia;
+      const personasDelDia = filasPersonas
+        .map(p=>({persona:p.persona, horas: typeof p.dias[dia-1]==='number' ? p.dias[dia-1] : 0}))
+        .filter(p=>p.horas>0)
+        .sort((a,b)=>b.horas-a.horas);
+      detalleSinNave.push({dia, personas:personasDelDia});
+      continue;
+    }
     horasConNave += horasDia;
     unicas.forEach(n=>{ porNave[n] = (porNave[n]||0) + horasDia; });
   }
@@ -2696,7 +2718,7 @@ function calcularSobretiempoPorNave(mesNombre){
   const lista = Object.entries(porNave).map(([nave,horas])=>({nave,horas})).sort((a,b)=>b.horas-a.horas);
   const totalDias = horasConNave + horasSinNave;
   return {
-    lista, horasSinNave, horasConNave,
+    lista, horasSinNave, horasConNave, detalleSinNave,
     pctConNave: totalDias ? horasConNave/totalDias : 0,
     pctSinNave: totalDias ? horasSinNave/totalDias : 0
   };
@@ -2903,6 +2925,19 @@ function renderSobretiempoMes(d, mes){
         }
       }
     });
+
+    // Tabla: detalle de días sin nave, persona por persona
+    const filasDetalle = [];
+    (cruceNave.detalleSinNave||[]).forEach(({dia, personas})=>{
+      if(!personas.length) return; // día sin nave pero tampoco sin persona identificable (no debería pasar)
+      personas.forEach(p=>{
+        filasDetalle.push({dia, persona:p.persona, horas:p.horas});
+      });
+    });
+    const tbodyDetalle = document.querySelector('#tablaDetalleSinNave tbody');
+    tbodyDetalle.innerHTML = filasDetalle.length
+      ? filasDetalle.map(f=>`<tr><td>${f.dia}</td><td style="text-align:left;">${f.persona}</td><td>${fmt1(f.horas)}</td></tr>`).join('')
+      : `<tr><td colspan="3" style="color:var(--gristxt); font-style:italic;">No hay días sin nave en muelle este mes.</td></tr>`;
   }
 }
 
