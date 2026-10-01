@@ -1323,7 +1323,17 @@
         Sube el archivo <b>"Estadística Operacional de Naves"</b> en el panel principal de carga del tablero (arriba de la Sección 1)
         para habilitar este cruce — necesita las fechas de Arribo y Zarpe de cada nave.
       </div>
-      <div class="chart-grid" style="grid-template-columns:1fr;" id="bloqueSTPorNave">
+      <div class="kpi-alert-row" id="bloqueSTPorNave">
+        <div class="kpi-alert ok">
+          <div class="kpi-alert-valor" id="stmPctConNave">—</div>
+          <div class="kpi-alert-etiqueta">% del Sobretiempo con Nave en Muelle</div>
+        </div>
+        <div class="kpi-alert warn">
+          <div class="kpi-alert-valor" id="stmPctSinNave">—</div>
+          <div class="kpi-alert-etiqueta">% del Sobretiempo sin Nave en Muelle</div>
+        </div>
+      </div>
+      <div class="chart-grid" style="grid-template-columns:1fr;" id="bloqueSTPorNaveChart">
         <div class="chart-box tall"><div class="chart-title">Sobretiempo del mes asociado a cada nave (h)</div><canvas id="chartSTMPorNave"></canvas></div>
       </div>
       <div class="nota-pie">
@@ -2664,6 +2674,7 @@ function calcularSobretiempoPorNave(mesNombre){
   const mesIdx = MES_A_INDICE[mesNombre];
   const porNave = {}; // {nave: horas}
   let horasSinNave = 0;
+  let horasConNave = 0; // suma por día (una sola vez por día, sin duplicar si hay 2+ naves ese día)
 
   for(let dia=1; dia<=nDias; dia++){
     const horasDia = diario.porDia[dia-1] || 0;
@@ -2678,11 +2689,17 @@ function calcularSobretiempoPorNave(mesNombre){
     }).map(r=>r.nave);
     const unicas = [...new Set(navesDelDia)];
     if(!unicas.length){ horasSinNave += horasDia; continue; }
+    horasConNave += horasDia;
     unicas.forEach(n=>{ porNave[n] = (porNave[n]||0) + horasDia; });
   }
 
   const lista = Object.entries(porNave).map(([nave,horas])=>({nave,horas})).sort((a,b)=>b.horas-a.horas);
-  return { lista, horasSinNave };
+  const totalDias = horasConNave + horasSinNave;
+  return {
+    lista, horasSinNave, horasConNave,
+    pctConNave: totalDias ? horasConNave/totalDias : 0,
+    pctSinNave: totalDias ? horasSinNave/totalDias : 0
+  };
 }
 
 function renderSobretiempoMes(d, mes){
@@ -2854,13 +2871,18 @@ function renderSobretiempoMes(d, mes){
   // --- Cruce: Sobretiempo por Nave (usa el archivo de Estadística Operacional de Naves) ---
   const cruceNave = calcularSobretiempoPorNave(mes);
   const bloqueNave = document.getElementById('bloqueSTPorNave');
+  const bloqueNaveChart = document.getElementById('bloqueSTPorNaveChart');
   const avisoSinNaves = document.getElementById('avisoSinDatosNaves');
   if(!cruceNave){
     bloqueNave.style.display = 'none';
+    bloqueNaveChart.style.display = 'none';
     avisoSinNaves.style.display = '';
   } else {
     bloqueNave.style.display = '';
+    bloqueNaveChart.style.display = '';
     avisoSinNaves.style.display = 'none';
+    document.getElementById('stmPctConNave').textContent = fmtPct(cruceNave.pctConNave);
+    document.getElementById('stmPctSinNave').textContent = fmtPct(cruceNave.pctSinNave);
     const lista = cruceNave.lista;
     const labels = lista.map(x=>x.nave).concat(cruceNave.horasSinNave>0 ? ['Sin nave en muelle'] : []);
     const valores = lista.map(x=>Math.round(x.horas*10)/10).concat(cruceNave.horasSinNave>0 ? [Math.round(cruceNave.horasSinNave*10)/10] : []);
