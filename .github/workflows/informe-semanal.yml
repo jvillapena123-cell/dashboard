@@ -1,0 +1,48 @@
+name: Informe semanal
+
+# Viernes 13:00 hora de Chile.
+# GitHub programa en UTC y Chile cambia de horario (UTC-3 en verano, UTC-4 en invierno),
+# así que se ejecuta a las 16:05 y 17:05 UTC; el script solo envía si en Chile ya son
+# las 13:00 o más y la semana aún no se ha enviado. Las ejecuciones de 18:05 y 19:05 son
+# reintentos por si GitHub se atrasa o falla el correo.
+on:
+  schedule:
+    - cron: "5 16,17,18,19 * * 5"
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "prueba = solo a mí · forzar = enviar ahora al destinatario"
+        type: choice
+        options: [prueba, forzar]
+        default: prueba
+      semana:
+        description: "Semana (opcional), por ejemplo 2026-S42. Vacío = semana actual"
+        required: false
+
+concurrency:
+  group: informe-semanal
+  cancel-in-progress: false
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --omit=dev --no-audit --no-fund
+      - name: Enviar informe
+        run: node scripts/enviar-informe.mjs
+        env:
+          MODO: ${{ github.event_name == 'workflow_dispatch' && inputs.modo || 'auto' }}
+          SEMANA: ${{ inputs.semana }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          AVISO_A: ${{ secrets.AVISO_A }}

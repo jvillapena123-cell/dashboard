@@ -508,6 +508,45 @@ label textarea{min-height:64px;resize:vertical}
   table.slim td.acts{grid-column:1/-1;display:flex;gap:8px}
   table.slim td.acts .btn{flex:1;padding:9px}
 }
+
+/* Informe semanal */
+.inf{display:grid;gap:16px;padding-top:20px}
+.inf-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.inf-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:14px}
+.inf-bar label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--muted)}
+.inf-bar select{padding:9px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);font-weight:600}
+.inf-sp{flex:1}
+.inf-body{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.inf-body>.card:first-child{grid-column:1/-1}
+.inf-body label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--muted)}
+.inf-body .checks label{flex-direction:row;color:var(--text)}
+.inf-rows{display:grid;gap:8px;margin-top:12px}
+.inf-row{display:grid;grid-template-columns:1.3fr 1.5fr .8fr 1fr auto;gap:6px;align-items:center}
+.inf-row.u{grid-template-columns:1.6fr 1fr 1fr auto}
+.inf-row.h{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.inf-row input{width:100%;min-width:0;padding:8px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg);font-size:13.5px}
+.inf-x{border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:4px 6px;border-radius:6px}
+.inf-x:hover{background:var(--gris);color:var(--rojo)}
+.inf-add{justify-self:start;margin-top:2px}
+.inf-inl{margin-top:10px;max-width:200px}
+.inf-body label input:not([type=checkbox]),.inf-body label textarea{width:100%;min-width:0}
+.inf-anual{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.inf-foot{color:var(--muted);font-size:12px;margin:0}
+.p-borr{background:var(--gris);color:var(--muted)}
+#dlg-inf{width:min(760px,96vw);height:92vh;display:none;flex-direction:column}
+#dlg-inf[open]{display:flex}
+.inf-dlg-h{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 6px}
+#inf-frame{flex:1;width:100%;border:0;border-top:1px solid var(--line);background:#F3F4F7}
+@media (max-width:900px){.inf-body{grid-template-columns:1fr}}
+@media (max-width:760px){
+  .inf-row,.inf-row.u{grid-template-columns:1fr 1fr;padding:8px;border:1px solid var(--line);border-radius:8px}
+  .inf-row.h{display:none}
+  .inf-row .inf-x{justify-self:end;grid-column:2}
+  .inf-anual{grid-template-columns:1fr}
+  #dlg-inf{height:100%}
+  .inf-sp{display:none}
+  .inf-bar .btn{flex:1 1 auto}
+}
 </style>
 </head>
 <body>
@@ -588,6 +627,7 @@ label textarea{min-height:64px;resize:vertical}
       <button role="tab" data-tab="Hallazgo" aria-selected="false" id="tab-hall">Hallazgos<span class="cnt" id="c-hall">0</span></button>
       <button role="tab" data-tab="tareas" aria-selected="false" id="tab-tareas" hidden><span class="lg">Tareas de turno</span><span class="sm">Tareas</span><span class="cnt" id="c-tar">0</span></button>
       <button role="tab" data-tab="mejoras" aria-selected="false" id="tab-mej" hidden><span class="lg">Seguimiento de mejoras</span><span class="sm">Mejoras</span><span class="cnt" id="c-mej">0</span></button>
+      <button role="tab" data-tab="informe" aria-selected="false" id="tab-inf" hidden><span class="lg">Informe semanal</span><span class="sm">Informe</span></button>
       <button role="tab" data-tab="admin" aria-selected="false" id="tab-admin" hidden><span class="lg">Administración</span><span class="sm">Admin</span></button>
     </nav>
   </div>
@@ -777,6 +817,57 @@ label textarea{min-height:64px;resize:vertical}
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section id="informe" hidden>
+    <div class="inf">
+      <div class="inf-head card">
+        <div class="inf-top">
+          <div>
+            <h2>Informe semanal de operaciones</h2>
+            <p class="help" style="margin:0">Se envía automáticamente <b>todos los viernes a las 13:00</b> (hora de Chile) desde el correo corporativo. Lo que guarde aquí es lo que sale.</p>
+          </div>
+          <span class="pill" id="inf-estado"></span>
+        </div>
+        <div class="inf-bar">
+          <label>Semana<select id="inf-sem"></select></label>
+          <button class="btn btn-ghost" type="button" id="inf-copiar">Copiar semana anterior</button>
+          <span class="inf-sp"></span>
+          <button class="btn btn-ghost" type="button" id="inf-prev">Vista previa del correo</button>
+          <button class="btn btn-primary" type="button" id="inf-save">Guardar</button>
+        </div>
+      </div>
+      <form id="inf-frm" class="inf-body" autocomplete="off">
+        <div class="card">
+          <h2>Encabezado</h2>
+          <div class="grid" style="margin-top:12px">
+            <label>Para<input name="para" type="text" placeholder="vyap@csh.cl"></label>
+            <label>Con copia (opcional, separados por coma)<input name="cc" type="text"></label>
+            <label class="full">Saludo<input name="saludo" type="text"></label>
+            <label class="full">Comentario adicional (opcional)<textarea name="nota" rows="2"></textarea></label>
+          </div>
+          <div class="checks" style="margin-top:12px"><label><input type="checkbox" name="pausado"> No enviar esta semana</label></div>
+        </div>
+        <div class="card"><h2>Naves atendidas Sitio Sur</h2><div class="inf-rows" data-k="sur"></div></div>
+        <div class="card"><h2>Naves atendidas Sitio Norte</h2><div class="inf-rows" data-k="norte"></div></div>
+        <div class="card"><h2>Naves a la gira</h2><div class="inf-rows" data-k="gira"></div></div>
+        <div class="card">
+          <h2>ETA próximas naves</h2>
+          <label class="inf-inl">Semana del título<input name="semanaProximas" type="number" min="1" max="53"></label>
+          <div class="inf-rows" data-k="proximas"></div>
+        </div>
+        <div class="card">
+          <h2>% Utilización terminal</h2>
+          <div class="inf-rows" data-k="utilizacion"></div>
+          <div class="grid inf-anual">
+            <label>% ocupación anual, corte<input name="anualCorte" type="text" placeholder="Ej.: 10 de oct."></label>
+            <label>Anual Norte<input name="anualNorte" type="text" inputmode="decimal"></label>
+            <label>Anual Sur<input name="anualSur" type="text" inputmode="decimal"></label>
+          </div>
+        </div>
+      </form>
+      <p class="help inf-foot" id="inf-meta"></p>
     </div>
   </section>
 
@@ -1094,6 +1185,11 @@ label textarea{min-height:64px;resize:vertical}
 <div class="viewer" id="viewer" hidden><img alt="Foto ampliada"></div>
 <datalist id="dl-zonas"></datalist>
 <datalist id="dl-empresas"></datalist>
+<dialog id="dlg-inf" aria-labelledby="inf-dlg-t">
+  <div class="inf-dlg-h"><b id="inf-dlg-t">Vista previa del correo</b><button class="btn btn-ghost btn-sm" type="button" id="inf-dlg-x">Cerrar</button></div>
+  <p class="help" id="inf-dlg-sub" style="margin:0;padding:0 16px 10px"></p>
+  <iframe id="inf-frame" title="Vista previa del informe"></iframe>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script type="module">
@@ -1103,6 +1199,7 @@ import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWith
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, getDoc, getDocs, addDoc, writeBatch }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, ADMIN_EMAILS } from "./firebase-config.js";
+import { renderInformeHTML, asuntoInforme, semanaISO, idSemana, DESTINATARIO_DEFECTO } from "./informe-correo.js";
 
 /* ---------- Utilidades ---------- */
 const ESTADOS=["Pendiente","En proceso","Cerrado","Bloqueado"], ABIERTOS=["Pendiente","En proceso","Bloqueado"];
@@ -1127,7 +1224,7 @@ function setSync(on,txt){$("#sync").innerHTML=`<span class="dot ${on?"on":""}"><
 function fbErr(e,what){console.error(e);toast(e&&e.code==="permission-denied"?`No tiene permiso para ${what}`:`No se pudo ${what}. Revise la conexión`);throw e}
 
 /* ---------- Estado ---------- */
-let auth, db, authUser=null, persona=null, isAdmin=false, myAcceso="", items=[], personas=[], unsubs=[], synced=false, esJefe=false, tareas=[], proyectos=[], mejoras=[], mjErr=false;
+let auth, db, authUser=null, persona=null, isAdmin=false, myAcceso="", items=[], personas=[], unsubs=[], synced=false, esJefe=false, tareas=[], proyectos=[], mejoras=[], mjErr=false, informes=[];
 const MAX_POR_CORREO=3;
 // Correos compartidos con un máximo mayor (por ejemplo, supervisores de Reloncaví que no tienen correo propio)
 const MAX_ESPECIAL={"supervisorhuachipato@reloncavi.cl":5};
@@ -1184,7 +1281,7 @@ $("#b-logout").onclick=()=>signOut(auth);
 $("#b-retry").onclick=()=>boot();
 
 async function boot(){
-  unsubs.forEach(u=>u());unsubs=[];items=[];personas=[];persona=null;isAdmin=false;myAcceso="";synced=false;esJefe=false;tareas=[];proyectos=[];mejoras=[];mjErr=false;
+  unsubs.forEach(u=>u());unsubs=[];items=[];personas=[];persona=null;isAdmin=false;myAcceso="";synced=false;esJefe=false;tareas=[];proyectos=[];mejoras=[];mjErr=false;informes=[];infSel=null;infDirty=false;
   if(!authUser){showGate("g-login");return}
   const bootstrap=(ADMIN_EMAILS||[]).map(x=>x.toLowerCase()).includes(myEmail());
   let acc=null;
@@ -1201,6 +1298,9 @@ async function boot(){
   if(!canReadH())tab="tareas";
   else if(location.hash==="#tareas"&&verTareas())tab="tareas";
   else if(location.hash==="#mejoras")tab="mejoras";
+  else if(location.hash==="#informe"&&isAdmin)tab="informe";
+  if(isAdmin)unsubs.push(onSnapshot(collection(db,"informe_semanal"),snap=>{informes=snap.docs.map(d=>({id:d.id,...d.data()}));if(tab==="informe")render()},
+    e=>{console.error(e);toast("No se pudo cargar el informe semanal. Revise que las reglas de Firebase permitan la colección informe_semanal")}));
   setSync(false,"Conectando…");
   if(verTareas())unsubs.push(onSnapshot(collection(db,"tareas"),snap=>{tareas=snap.docs.map(d=>({id:d.id,...d.data()}));if(!canReadH())setSync(!snap.metadata.fromCache,snap.metadata.fromCache?"Sin señal":"Sincronizado");render()},
     e=>{console.error(e);toast("No se pudieron cargar las tareas de turno. Revise que las reglas de Firebase estén actualizadas")}));
@@ -1343,6 +1443,8 @@ function render(){
   $("#c-comp").textContent=items.filter(i=>(i.tipo||"Compromiso")==="Compromiso").length;
   $("#c-hall").textContent=items.filter(i=>i.tipo==="Hallazgo").length;
   $("#tab-admin").hidden=!isAdmin;
+  $("#tab-inf").hidden=!isAdmin;
+  if(tab==="informe"&&!isAdmin)tab="Compromiso";
   $("#tab-tareas").hidden=!verTareas();
   ["#tab-dash","#tab-comp","#tab-hall","#tab-mej"].forEach(s=>$(s).hidden=!canReadH());
   $("#c-mej").textContent=mejoras.filter(m=>m.estado!=="Cerrado").length;
@@ -1351,9 +1453,10 @@ function render(){
   if(tab==="tareas"&&!verTareas())tab="Compromiso";
   if(tab!=="tareas"&&tab!=="admin"&&!canReadH())tab="tareas";
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===tab)));
-  $("#list").hidden=tab==="admin"||tab==="dash"||tab==="tareas"||tab==="mejoras";$("#mejoras").hidden=tab!=="mejoras";$("#admin").hidden=tab!=="admin";$("#dash").hidden=tab!=="dash";$("#tareas").hidden=tab!=="tareas";
+  $("#list").hidden=tab==="admin"||tab==="dash"||tab==="tareas"||tab==="mejoras"||tab==="informe";$("#informe").hidden=tab!=="informe";$("#mejoras").hidden=tab!=="mejoras";$("#admin").hidden=tab!=="admin";$("#dash").hidden=tab!=="dash";$("#tareas").hidden=tab!=="tareas";
   $("#btn-new").hidden=!canWrite();
-  $("#fab").hidden=!canWrite()||tab==="admin"||tab==="tareas"||tab==="mejoras";
+  $("#fab").hidden=!canWrite()||tab==="admin"||tab==="tareas"||tab==="mejoras"||tab==="informe";
+  if(tab==="informe"){renderInforme();return}
   if(tab==="tareas"){renderTareas();return}
   if(tab==="mejoras"){renderMejoras();return}
   if(tab==="dash"){renderDash();return}
@@ -1794,6 +1897,123 @@ $("#strip").addEventListener("click",e=>{const b=e.target.closest("button");if(b
 document.querySelector(".tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-tab]");if(!b)return;tab=b.dataset.tab;fAlerta="";$("#f-resp").value="";$("#f-emp").value="";render()});
 
 frm.responsableCorreo.addEventListener("change",()=>{const p=pById(frm.responsableCorreo.value);if(p&&p.empresa)frm.empresa.value=p.empresa});
+
+/* ---------- Informe semanal (correo automático de los viernes) ---------- */
+let infSel=null, infDraft=null, infDirty=false;
+const INF_COLS={
+  sur:[["nave","Nave"],["faena","Faena"],["tons","Tons."],["fecha","Fecha atn."]],
+  norte:[["nave","Nave"],["faena","Faena"],["tons","Tons."],["fecha","Fecha atn."]],
+  gira:[["nave","Nave"],["faena","Faena"],["sitio","Sitio"],["eta","ETA"]],
+  proximas:[["nave","Nave"],["faena","Faena"],["sitio","Sitio"],["eta","ETA"]],
+  utilizacion:[["mes","Mes"],["norte","Norte %"],["sur","Sur %"]]
+};
+const infVacia=k=>Object.fromEntries(INF_COLS[k].map(([c])=>[c,""]));
+const infHoy=()=>{const d=new Date(hoyISO()+"T12:00:00");return semanaISO(d)};
+const infParse=id=>{const m=/^(\d{4})-S(\d{2})$/.exec(id||"");return m?{anio:+m[1],semana:+m[2]}:null};
+function infPrevio(id){return informes.filter(x=>x.id<id).sort((a,b)=>b.id.localeCompare(a.id))[0]||null}
+function infNuevo(id){
+  const {anio,semana}=infParse(id), prev=infPrevio(id);
+  const d={anio,semana,saludo:`Estimado Vinko, informe semana ${semana}`,para:prev&&prev.para||DESTINATARIO_DEFECTO,cc:prev&&prev.cc||"",nota:"",pausado:false,
+    semanaProximas:semana+1,anualCorte:"",anualNorte:"",anualSur:""};
+  ["sur","norte","gira","proximas"].forEach(k=>d[k]=[infVacia(k)]);
+  d.utilizacion=prev&&Array.isArray(prev.utilizacion)&&prev.utilizacion.length?prev.utilizacion.map(r=>({...r})):[infVacia("utilizacion")];
+  if(prev){d.anualCorte=prev.anualCorte||"";d.anualNorte=prev.anualNorte||"";d.anualSur=prev.anualSur||""}
+  return d;
+}
+function infCargar(id){
+  const ex=informes.find(x=>x.id===id);
+  infDraft=ex?JSON.parse(JSON.stringify(ex)):infNuevo(id);
+  delete infDraft.id;
+  Object.keys(INF_COLS).forEach(k=>{if(!Array.isArray(infDraft[k])||!infDraft[k].length)infDraft[k]=[infVacia(k)]});
+  infDirty=false; infPintarForm();
+}
+function infPintarForm(){
+  const f=$("#inf-frm");
+  ["para","cc","saludo","nota","semanaProximas","anualCorte","anualNorte","anualSur"].forEach(n=>f.elements[n].value=infDraft[n]??"");
+  f.elements.pausado.checked=!!infDraft.pausado;
+  f.querySelectorAll(".inf-rows").forEach(el=>infPintarFilas(el.dataset.k));
+}
+function infPintarFilas(k){
+  const el=$(`#inf-frm .inf-rows[data-k="${k}"]`), cols=INF_COLS[k], u=k==="utilizacion"?" u":"";
+  el.innerHTML=`<div class="inf-row h${u}">${cols.map(c=>`<span>${c[1]}</span>`).join("")}<span></span></div>`+
+    infDraft[k].map((r,i)=>`<div class="inf-row${u}">${cols.map(([c,l])=>`<input data-k="${k}" data-i="${i}" data-c="${c}" value="${esc(r[c]??"")}" placeholder="${l}" aria-label="${l} fila ${i+1}">`).join("")}<button type="button" class="inf-x" data-del="${k}" data-i="${i}" aria-label="Quitar fila ${i+1}">×</button></div>`).join("")+
+    `<button type="button" class="btn btn-ghost btn-sm inf-add" data-add="${k}">+ Agregar fila</button>`;
+}
+function infEstado(){
+  const ex=informes.find(x=>x.id===infSel), el=$("#inf-estado");
+  let t,c;
+  if(infDirty){t="Cambios sin guardar";c="p-porv"}
+  else if(!ex){t="Aún no guardado";c="p-borr"}
+  else if(ex.enviado&&ex.enviado.fecha){t=`Enviado ${fmtDT(ex.enviado.fecha)}`;c="p-cerr"}
+  else if(ex.pausado){t="No se enviará esta semana";c="p-venc"}
+  else{t="Guardado · sale el viernes 13:00";c="p-plazo"}
+  el.className="pill "+c; el.textContent=t;
+  $("#inf-meta").textContent=ex&&ex.actualizado?`Última modificación: ${fmtDT(ex.actualizado)} por ${ex.actualizadoPor||""}${ex.enviado&&ex.enviado.a?` · Enviado a ${ex.enviado.a}`:""}`:"";
+}
+function renderInforme(){
+  const hoy=infHoy(), act=idSemana(hoy.anio,hoy.semana);
+  const sig=(()=>{const d=new Date(hoyISO()+"T12:00:00");d.setDate(d.getDate()+7);const w=semanaISO(d);return idSemana(w.anio,w.semana)})();
+  const ids=[...new Set([sig,act,...informes.map(x=>x.id)])].filter(infParse).sort().reverse();
+  if(!infSel)infSel=act;
+  const sel=$("#inf-sem");
+  sel.innerHTML=ids.map(id=>{const w=infParse(id),ex=informes.find(x=>x.id===id);
+    return `<option value="${id}">Semana ${w.semana} · ${w.anio}${id===act?" (actual)":""}${ex&&ex.enviado?" · enviada":ex?"":" · nueva"}</option>`}).join("");
+  sel.value=infSel;
+  if(!infDraft||!infDirty)infCargar(infSel);
+  infEstado();
+}
+$("#inf-sem").addEventListener("change",e=>{
+  if(infDirty&&!confirm("Tiene cambios sin guardar en esta semana. ¿Descartarlos?")){e.target.value=infSel;return}
+  infSel=e.target.value;infDirty=false;infDraft=null;renderInforme();
+});
+$("#inf-frm").addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.k){infDraft[t.dataset.k][+t.dataset.i][t.dataset.c]=t.value}
+  else if(t.name==="pausado"){infDraft.pausado=t.checked}
+  else if(t.name){infDraft[t.name]=t.name==="semanaProximas"?(t.value?+t.value:""):t.value}
+  infDirty=true;infEstado();
+});
+$("#inf-frm").addEventListener("click",e=>{
+  const a=e.target.closest("[data-add]"),d=e.target.closest("[data-del]");
+  if(a){const k=a.dataset.add;infDraft[k].push(infVacia(k));infPintarFilas(k);infDirty=true;infEstado();
+    const ins=document.querySelectorAll(`#inf-frm input[data-k="${k}"][data-i="${infDraft[k].length-1}"]`);if(ins[0])ins[0].focus()}
+  if(d){const k=d.dataset.del;infDraft[k].splice(+d.dataset.i,1);if(!infDraft[k].length)infDraft[k].push(infVacia(k));infPintarFilas(k);infDirty=true;infEstado()}
+});
+$("#inf-frm").addEventListener("submit",e=>e.preventDefault());
+$("#inf-copiar").addEventListener("click",()=>{
+  const prev=infPrevio(infSel);
+  if(!prev){toast("No hay una semana anterior guardada");return}
+  if(!confirm(`Se copiarán las tablas de la semana ${prev.semana} sobre la semana ${infParse(infSel).semana}. ¿Continuar?`))return;
+  const w=infParse(infSel);
+  ["para","cc","anualCorte","anualNorte","anualSur"].forEach(k=>infDraft[k]=prev[k]??"");
+  ["sur","norte","gira","proximas","utilizacion"].forEach(k=>infDraft[k]=Array.isArray(prev[k])&&prev[k].length?prev[k].map(r=>({...r})):[infVacia(k)]);
+  infDraft.semanaProximas=w.semana+1;
+  infPintarForm();infDirty=true;infEstado();toast(`Copiado desde la semana ${prev.semana}. Revise y guarde`);
+});
+function infLimpio(){
+  const d={...infDraft};
+  Object.keys(INF_COLS).forEach(k=>d[k]=(d[k]||[]).map(r=>Object.fromEntries(Object.entries(r).map(([a,b])=>[a,String(b??"").trim()]))).filter(r=>Object.values(r).some(Boolean)));
+  ["para","cc","saludo","nota","anualCorte","anualNorte","anualSur"].forEach(k=>d[k]=String(d[k]??"").trim());
+  d.para=d.para||DESTINATARIO_DEFECTO;
+  return d;
+}
+$("#inf-save").addEventListener("click",async()=>{
+  const d=infLimpio(), w=infParse(infSel);
+  delete d.enviado;
+  d.anio=w.anio;d.semana=w.semana;d.actualizado=nowISO();d.actualizadoPor=myName();
+  const b=$("#inf-save");b.disabled=true;
+  try{await setDoc(doc(db,"informe_semanal",infSel),d,{merge:true});infDirty=false;toast(`Informe semana ${w.semana} guardado`);infEstado()}
+  catch(e){fbErr(e,"guardar el informe")}
+  finally{b.disabled=false}
+});
+$("#inf-prev").addEventListener("click",()=>{
+  const d=infLimpio();
+  $("#inf-dlg-sub").textContent=`Para: ${d.para}${d.cc?` · CC: ${d.cc}`:""} · Asunto: ${asuntoInforme(d)}`;
+  $("#inf-frame").srcdoc=renderInformeHTML(d);
+  $("#dlg-inf").showModal();
+});
+$("#inf-dlg-x").addEventListener("click",()=>$("#dlg-inf").close());
+window.addEventListener("beforeunload",e=>{if(infDirty){e.preventDefault();e.returnValue=""}});
 
 /* ---------- Tareas de turno ---------- */
 const tDlg=$("#dlg-t"), tfrm=$("#tfrm"), tcDlg=$("#dlg-tc"), tcfrm=$("#tcfrm");
