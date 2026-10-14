@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablero de Control HTP 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>if(typeof Chart==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"><\/script>');}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script>if(typeof ChartDataLabels==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"><\/script>');}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>if(typeof XLSX==='undefined'){document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');}</script>
+<style>
+  :root{
+    --azul:#1F3A6E;
+    --naranja:#E8804A;
+    --azulclaro:#4A6FA5;
+    --gris:#E8E8EC;
+    --gristxt:#5B6472;
+    --blanco:#FFFFFF;
+    --verde-ok:#3E8E5A;
+    --rojo-warn:#C64B3C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Montserrat',Arial,sans-serif;
+    background:#F3F4F7;
+    color:#1B2233;
+  }
+  header.banner{
+    background:var(--azul);
+    color:var(--blanco);
+    padding:22px 28px 16px 28px;
+  }
+  .lib-error-banner{display:none;background:#C64B3C;color:#fff;text-align:center;font-size:13px;font-weight:700;padding:12px 20px;}
+  .lib-error-banner.show{display:block;}
+  header.banner h1{margin:0;font-size:22px;font-weight:800;letter-spacing:.3px;}
+  header.banner p{margin:6px 0 0 0;font-size:13px;font-style:italic;color:#CBD6EA;font-weight:500;}
+  .wrap{max-width:1400px;margin:0 auto;padding:20px 24px 60px 24px;}
+  .update-bar{display:flex;align-items:center;gap:14px;margin:0 0 22px 0;flex-wrap:wrap;}
+  .btn-update{background:var(--azul);color:var(--blanco);border:none;border-radius:8px;padding:11px 18px;font-family:'Montserrat',Arial,sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px;box-shadow:0 1px 4px rgba(31,58,110,.18);transition:.15s;}
+  .btn-update:hover{background:#162c54;}
+  .btn-update .btn-ico{font-size:15px;}
+  .update-hint{font-size:11.5px;color:var(--gristxt);font-style:italic;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(20,28,48,.55);z-index:1000;align-items:center;justify-content:center;padding:24px;}
+  .modal-overlay.open{display:flex;}
+  .modal-window{background:var(--blanco);border-radius:14px;max-width:900px;width:100%;max-height:90vh;overflow-y:auto;padding:24px 26px 26px 26px;box-shadow:0 12px 40px rgba(0,0,0,.35);}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .modal-header h2{margin:0;font-size:17px;color:var(--azul);font-weight:700;}
+  .modal-close{background:none;border:none;font-size:18px;color:var(--gristxt);cursor:pointer;line-height:1;padding:4px 8px;border-radius:6px;}
+  .modal-close:hover{background:var(--gris);color:var(--azul);}
+  .modal-window .sub{font-size:12px;color:var(--gristxt);margin:0 0 16px 0;}
+  .btn-apply{margin-top:18px;width:100%;background:var(--naranja);color:var(--blanco);border:none;border-radius:8px;padding:11px;font-family:'Montserrat',Arial,sans-serif;font-size:13px;font-weight:700;cursor:pointer;}
+  .btn-apply:hover{background:#d16f39;}
+  .password-window{max-width:380px;}
+  .password-input{width:100%;padding:11px 12px;border:1.5px solid #C4CBDA;border-radius:8px;font-family:'Montserrat',Arial,sans-serif;font-size:14px;box-sizing:border-box;outline:none;transition:.15s;}
+  .password-input:focus{border-color:var(--azul);}
+  .password-error{display:none;color:var(--rojo-warn);font-size:11.5px;font-weight:600;margin-top:8px;}
+  .password-error.show{display:block;}
+  .upload-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));gap:14px;}
+  .dropzone{border:2px dashed #C4CBDA;border-radius:10px;padding:14px 12px;text-align:center;cursor:pointer;transition:.15s;background:#FAFBFD;position:relative;}
+  .dropzone:hover, .dropzone.drag{border-color:var(--naranja);background:#FFF6F0;}
+  .dropzone .ico{font-size:22px;margin-bottom:6px;}
+  .dropzone .titulo{font-size:12.5px;font-weight:700;color:var(--azul);margin-bottom:3px;}
+  .dropzone .hint{font-size:10.5px;color:var(--gristxt);}
+  .dropzone .estado{margin-top:8px;font-size:10.5px;font-weight:600;min-height:14px;}
+  .dropzone input{display:none;}
+  .estado.ok{color:var(--verde-ok);}
+  .estado.err{color:var(--rojo-warn);}
+  .estado.default{color:var(--gristxt); font-weight:500; font-style:italic;}
+  section.bloque{background:var(--blanco);border-radius:12px;padding:20px 22px 10px 22px;margin-bottom:22px;box-shadow:0 1px 4px rgba(31,58,110,.08);}
+  section.bloque h2.titulo-seccion{font-size:14.5px;font-weight:700;color:var(--blanco);background:var(--azul);padding:9px 14px;border-radius:7px;margin:0 0 18px 0;letter-spacing:.2px;}
+  .chart-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:18px;margin-bottom:14px;}
+  .chart-grid.dos-col{grid-template-columns:repeat(2, 1fr);}
+  .chart-grid > *{min-width:0;}
+  .chart-box{background:#FBFBFD;border:1px solid var(--gris);border-radius:10px;padding:12px 10px 6px 10px;min-width:0;}
+  .chart-box .chart-title{font-size:11.5px;font-weight:700;color:var(--azul);text-align:center;margin-bottom:6px;}
+  .chart-box canvas{max-height:230px;}
+  .chart-box.tall canvas{max-height:320px;}
+  .nota-pie{font-size:10.5px;color:var(--gristxt);font-style:italic;padding:8px 4px 14px 4px;line-height:1.5;border-top:1px solid var(--gris);margin-top:6px;}
+  .insight{background:#FFF3EC;border-left:4px solid var(--naranja);border-radius:6px;padding:9px 12px;font-size:11.5px;color:#7A3E1D;font-weight:600;margin-bottom:14px;}
+  .kpi-mini-row{display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;margin-bottom:18px;}
+  .kpi-mini-card{background:#FBFBFD;border:1px solid var(--gris);border-radius:10px;padding:12px 12px 10px 12px;border-top:4px solid var(--gris);}
+  .kpi-mini-card.ok{ border-top-color:var(--verde-ok); }
+  .kpi-mini-card.warn{ border-top-color:var(--rojo-warn); }
+  .kpi-mini-card .terminal{font-size:10px;font-weight:700;color:var(--gristxt);text-transform:uppercase;letter-spacing:.3px;}
+  .kpi-mini-card .valor{font-size:20px;font-weight:800;color:var(--azul);margin:4px 0 2px 0;}
+  .kpi-mini-card .etiqueta{font-size:10.5px;color:var(--gristxt);font-weight:600;}
+  .status-chip{display:inline-block;margin-top:6px;font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:12px;letter-spacing:.2px;}
+  .status-chip.ok{ background:#E6F4EB; color:var(--verde-ok); }
+  .status-chip.warn{ background:#FBE9E6; color:var(--rojo-warn); }
+  .status-chip.neutral{ background:var(--gris); color:var(--gristxt); }
+  .movilizado-header{margin-bottom:14px;}
+  .movilizado-header h3{margin:0 0 4px 0;font-size:18px;font-weight:800;color:var(--azul);}
+  .movilizado-header p{margin:0;font-size:12px;color:var(--gristxt);}
+  .movilizado-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .total-badge{background:var(--naranja);color:var(--blanco);font-size:12px;font-weight:800;letter-spacing:.3px;padding:10px 16px;border-radius:8px;white-space:nowrap;}
+  .movilizado-grid{display:grid;grid-template-columns:2.2fr 1fr;gap:18px;align-items:stretch;}
+  .movilizado-grid > *{min-width:0;}
+  .movilizado-chart{display:flex;flex-direction:column;}
+  .movilizado-chart canvas{flex:1;max-height:340px;}
+  .insight-card{background:var(--azul);border-radius:12px;padding:18px 18px 0 18px;color:var(--blanco);display:flex;flex-direction:column;overflow:hidden;}
+  .insight-card-label{font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--naranja);margin-bottom:8px;}
+  .insight-card-stat{font-size:38px;font-weight:800;line-height:1;margin-bottom:10px;}
+  .insight-card-desc{font-size:12px;color:#D7DEEC;line-height:1.5;margin-bottom:14px;}
+  .insight-card-desc b{color:var(--blanco);}
+  .insight-card-art{margin:auto -18px 0 -18px;line-height:0;}
+  .insight-card-art svg{width:100%;height:auto;display:block;}
+  @media (max-width:900px){
+    .movilizado-grid{ grid-template-columns:1fr; }
+  }
+  @media (max-width:1100px){
+    .upload-grid{grid-template-columns:repeat(2, 1fr);}
+    .chart-grid{grid-template-columns:1fr;}
+    .chart-grid.dos-col{grid-template-columns:1fr;}
+  }
+  @media (max-width:640px){
+    header.banner{padding:18px 16px 14px 16px;}
+    header.banner h1{font-size:17px;}
+    .wrap{padding:16px 16px 40px 16px;}
+    section.bloque{padding:16px 12px 8px 12px;}
+    .kpi-mini-row{grid-template-columns:repeat(2, 1fr);}
+    .upload-grid{grid-template-columns:1fr;}
+  }
+</style>
+
+<div class="lib-error-banner" id="libErrorBanner">
+  ⚠️ No se pudieron cargar las librerías necesarias (Chart.js / XLSX) desde internet. Verifica tu conexión y recarga la página.
+</div>
+
+<header class="banner">
+  <h1>HUACHIPATO TERMINAL PORTUARIO&nbsp;&nbsp;·&nbsp;&nbsp;TABLERO DE CONTROL DE GESTIÓN 2026</h1>
+  <p>Seguridad (HTP y Reloncaví) · CPPT (Convenio Provisión Puesto de Trabajo) · Cierres de puerto por mal tiempo · Naves Aceros Arequipa · Rates operacionales por producto</p>
+</header>
+
+<div class="wrap">
+
+  <div class="update-bar">
+    <button type="button" class="btn-update" id="btnOpenUpload">
+      <span class="btn-ico">⇪</span> Actualizar datos del tablero
+    </button>
+    <span class="update-hint">Los archivos se cargan en una ventana aparte y no afectan la visualización mientras no los subas.</span>
+  </div>
+
+  <section class="bloque">
+    <h2 class="titulo-seccion">1&nbsp;&nbsp;·&nbsp;&nbsp;SEGURIDAD — Accidentes con Tiempo Perdido y Días Perdidos (HTP vs. Reloncaví)</h2>
+    <div class="insight" id="insightSeguridad">Cargando indicador de seguridad…</div>
+    <div class="kpi-mini-row" id="kpiMiniSeguridad"></div>
+    <div class="chart-grid dos-col">
+      <div class="chart-box"><div class="chart-title">Accidentes con Tiempo Perdido por mes — HTP vs. Reloncaví</div><canvas id="chartSegAccidentes"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Días Perdidos por mes — HTP vs. Reloncaví</div><canvas id="chartSegDias"></canvas></div>
+    </div>
+    <div class="nota-pie">
+      Fuente: Dashboard Seguridad HTP / Reloncaví (hojas "HTP" y "Reloncaví"). Meta accidentes = meta días perdidos = 0 (tolerancia cero) para ambos terminales.
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2 class="titulo-seccion">2&nbsp;&nbsp;·&nbsp;&nbsp;CONVENIO PROVISIÓN PUESTO DE TRABAJO (CPPT) — cobertura y ahorro</h2>
+    <div class="chart-grid">
+      <div class="chart-box"><div class="chart-title">Cobertura de turnos por mes</div><canvas id="chartCppt1"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Ahorro vs. Cobro CPPT por mes ($)</div><canvas id="chartCppt2"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Turnos objetados (lic. médica / no se presenta)</div><canvas id="chartCppt3"></canvas></div>
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2 class="titulo-seccion">3&nbsp;&nbsp;·&nbsp;&nbsp;CIERRES DE PUERTO POR MAL TIEMPO — indisponibilidad operacional</h2>
+    <div class="chart-grid">
+      <div class="chart-box"><div class="chart-title">Cierres registrados vs. que afectaron operación</div><canvas id="chartCierre1"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Horas de afectación a la operación por mes</div><canvas id="chartCierre2"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Causas de los cierres registrados</div><canvas id="chartCierre3"></canvas></div>
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2 class="titulo-seccion">4&nbsp;&nbsp;·&nbsp;&nbsp;NAVES ACEROS AREQUIPA — rate/día, costo y productividad</h2>
+    <div class="chart-grid">
+      <div class="chart-box"><div class="chart-title">Rate/día por nave — logrado vs. contratado (Tons/día)</div><canvas id="chartNave1"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Costo de transferencia CON 10% (USD/Ton)</div><canvas id="chartNave2"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Productividad: Ton por turno-hombre</div><canvas id="chartNave3"></canvas></div>
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2 class="titulo-seccion">5&nbsp;&nbsp;·&nbsp;&nbsp;RATES OPERACIONALES POR PRODUCTO 2026 — Caliza y Soda Cáustica (Tons/día por nave)</h2>
+    <div class="insight" id="insightRate">Cargando indicador de cumplimiento…</div>
+    <div class="chart-grid dos-col">
+      <div class="chart-box tall"><div class="chart-title">Rate/día de CALIZA por nave — logrado vs. contratado (2026)</div><canvas id="chartRateCaliza"></canvas></div>
+      <div class="chart-box tall"><div class="chart-title">Rate/día de SODA CÁUSTICA por nave — logrado vs. contratado (2026)</div><canvas id="chartRateSoda"></canvas></div>
+    </div>
+    <div class="chart-grid" style="grid-template-columns:1fr;">
+      <div class="chart-box tall"><div class="chart-title">Rate/día de KARVUNA por recalada 2026 (azul = caliza · naranja = otro producto)</div><canvas id="chartRateKarvuna"></canvas></div>
+    </div>
+    <div class="nota-pie">
+      Rate/día = Rate Operacional (Tons/día), promedio por nave sobre sus recaladas del año 2026. Se excluyen registros anómalos
+      (ej. PATAGONIA, 85.548 Tons/día en caliza) por distorsionar la escala del gráfico.
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2 class="titulo-seccion">6&nbsp;&nbsp;·&nbsp;&nbsp;OCUPACIÓN DEL TERMINAL MARÍTIMO — Sitio Norte y Sitio Sur</h2>
+    <div class="insight" id="insightOcupacion">Cargando indicador de ocupación…</div>
+    <div class="chart-grid dos-col">
+      <div class="chart-box tall"><div class="chart-title">% de Ocupación Anual por Sitio (2022–2026)</div><canvas id="chartOcupAnual"></canvas></div>
+      <div class="chart-box tall"><div class="chart-title">% de Ocupación 2026 por Mes y Anual a la Fecha</div><canvas id="chartOcup2026"></canvas></div>
+    </div>
+    <div class="nota-pie">
+      % Ocupación = Horas utilizadas ÷ Horas disponibles del sitio, por mes/año. "Anual a la fecha" corresponde al acumulado 2026
+      hasta el último mes con datos cargados. Fuente: Libro4 (hoja "Ocupación Muelle").
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2 class="titulo-seccion">7&nbsp;&nbsp;·&nbsp;&nbsp;TONELAJE TOTAL TRANSFERIDO — Terminal completo (todas las naves y productos)</h2>
+
+    <div class="movilizado-header">
+      <h3>Movilizado por año (2022–2026)</h3>
+      <p>Total de toneladas transferidas por año. *2026: datos a la fecha (año en curso)</p>
+    </div>
+
+    <div class="movilizado-grid">
+      <div class="chart-box tall movilizado-chart">
+        <div class="chart-title">Toneladas transferidas por año</div>
+        <canvas id="chartTonAnual"></canvas>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-label">INSIGHT CLAVE</div>
+        <div class="insight-card-stat" id="statTonelaje">—</div>
+        <div class="insight-card-desc" id="descTonelaje">Calculando variación…</div>
+        <div class="insight-card-art">
+          <svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="200" height="90" fill="#16294f"/>
+            <rect x="0" y="62" width="200" height="28" fill="#1c3660"/>
+            <path d="M0,62 Q50,50 100,60 T200,58 L200,90 L0,90 Z" fill="#22406e"/>
+            <rect x="40" y="30" width="70" height="26" rx="2" fill="#E8804A"/>
+            <rect x="46" y="24" width="14" height="8" fill="#c96a30"/>
+            <rect x="66" y="20" width="10" height="12" fill="#c96a30"/>
+            <circle cx="112" cy="56" r="5" fill="#0d1a33"/>
+            <circle cx="150" cy="56" r="5" fill="#0d1a33"/>
+            <rect x="108" y="38" width="46" height="16" rx="2" fill="#4A6FA5"/>
+            <rect x="150" y="42" width="20" height="12" fill="#4A6FA5"/>
+            <line x1="120" y1="38" x2="120" y2="14" stroke="#cbd6ea" stroke-width="2"/>
+            <line x1="120" y1="14" x2="140" y2="14" stroke="#cbd6ea" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-grid" style="grid-template-columns:1fr; margin-top:16px;">
+      <div class="chart-box"><div class="chart-title">Total Transferido 2026 por Mes (Tons)</div><canvas id="chartTonMes"></canvas></div>
+    </div>
+
+    <div class="movilizado-header" style="margin-top:26px;">
+      <div class="movilizado-header-row">
+        <div>
+          <h3>Movilizado por producto – 2026</h3>
+          <p>Toneladas transferidas por producto durante 2026 (datos a la fecha)</p>
+        </div>
+        <div class="total-badge" id="badgeTotalProducto">TOTAL 2026: — t</div>
+      </div>
+    </div>
+
+    <div class="movilizado-grid">
+      <div class="chart-box tall movilizado-chart">
+        <div class="chart-title">Toneladas por producto – 2026</div>
+        <canvas id="chartTonProducto"></canvas>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-label">INSIGHT CLAVE</div>
+        <div class="insight-card-stat" id="statProducto">—</div>
+        <div class="insight-card-desc" id="descProducto">Calculando concentración…</div>
+        <div class="insight-card-art">
+          <svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="200" height="90" fill="#16294f"/>
+            <rect x="0" y="62" width="200" height="28" fill="#1c3660"/>
+            <path d="M0,62 Q50,50 100,60 T200,58 L200,90 L0,90 Z" fill="#22406e"/>
+            <rect x="40" y="30" width="70" height="26" rx="2" fill="#E8804A"/>
+            <rect x="46" y="24" width="14" height="8" fill="#c96a30"/>
+            <rect x="66" y="20" width="10" height="12" fill="#c96a30"/>
+            <circle cx="112" cy="56" r="5" fill="#0d1a33"/>
+            <circle cx="150" cy="56" r="5" fill="#0d1a33"/>
+            <rect x="108" y="38" width="46" height="16" rx="2" fill="#4A6FA5"/>
+            <rect x="150" y="42" width="20" height="12" fill="#4A6FA5"/>
+            <line x1="120" y1="38" x2="120" y2="14" stroke="#cbd6ea" stroke-width="2"/>
+            <line x1="120" y1="14" x2="140" y2="14" stroke="#cbd6ea" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="nota-pie">
+      Total transferido = Toneladas embarcadas + Tonelaje descargado, sumadas para todas las naves y productos del terminal
+      (no solo Aceros Arequipa). Fuente: Estadística Operacional de Naves.
+    </div>
+  </section>
+
+  <section class="bloque">
+    <h2 class="titulo-seccion">8&nbsp;&nbsp;·&nbsp;&nbsp;NAVES ACEROS A&amp;B — rate/día, costo y productividad</h2>
+    <div class="insight" id="insightAcerosAB">Cargando indicador de Aceros A&amp;B…</div>
+    <div class="chart-grid">
+      <div class="chart-box"><div class="chart-title">Rate/día por nave — logrado vs. contratado (Tons/día)</div><canvas id="chartAB1"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Costo USD/Ton — programado vs. logrado</div><canvas id="chartAB2"></canvas></div>
+      <div class="chart-box"><div class="chart-title">Productividad: Tons/hora</div><canvas id="chartAB3"></canvas></div>
+    </div>
+    <div class="nota-pie">
+      Cliente "A&amp;B" — Estadística Operacional de Naves 2026. Costo = USD/Ton Programado vs. Logrado; Productividad = Tons/hr Bruto.
+      Métricas equivalentes a las de Aceros Arequipa, pero calculadas con los campos disponibles para este cliente
+      (no incluye dotación ni costo de transferencia CON 10%, al no estar en la fuente de datos).
+    </div>
+  </section>
+
+  <div class="nota-pie" style="margin-top:-6px;">
+    Fuente: Dashboard Seguridad HTP/Reloncaví · Turnos CPPT 2026 · Cierres de Puerto 2026 (KPI) · Tabla Naves Aceros Arequipa · Estadística Operacional de Naves · Ocupación de Muelle.
+    Cobertura ponderada = turnos efectivos ÷ turnos convenio. % indisponibilidad = horas de afectación ÷ horas disponibles.
+    Costo de transferencia = dotación + maquinaria (excluye porteo).
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="passwordOverlay">
+  <div class="modal-window password-window">
+    <div class="modal-header">
+      <h2>🔒 Acceso restringido</h2>
+      <button type="button" class="modal-close" id="btnClosePassword" aria-label="Cerrar">✕</button>
+    </div>
+    <p class="sub">Ingresa la clave de acceso para actualizar los datos del tablero.</p>
+    <form id="formPassword" autocomplete="off">
+      <input type="password" id="inputPassword" class="password-input" placeholder="Clave de acceso" autocomplete="off">
+      <div class="password-error" id="passwordError">Clave incorrecta. Intenta nuevamente.</div>
+      <button type="submit" class="btn-apply" style="margin-top:12px;">Ingresar</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-window">
+    <div class="modal-header">
+      <h2>Actualizar datos del tablero</h2>
+      <button type="button" class="modal-close" id="btnCloseUpload" aria-label="Cerrar">✕</button>
+    </div>
+
+    <p class="sub">Arrastra o selecciona los archivos Excel originales para recalcular el tablero automáticamente. Si no cargas un archivo, se usan los últimos datos disponibles.</p>
+    <div class="upload-grid">
+
+      <label class="dropzone" id="dz-cppt">
+        <input type="file" id="file-cppt" accept=".xlsx,.xls,.csv">
+        <div class="ico">📋</div>
+        <div class="titulo">Turnos CPPT</div>
+        <div class="hint">Archivo "Resumen CPPT" / Grafico_Turnos_CPPT</div>
+        <div class="estado default" id="estado-cppt">Usando datos vigentes (jul-2026)</div>
+      </label>
+
+      <label class="dropzone" id="dz-cierres">
+        <input type="file" id="file-cierres" accept=".xlsx,.xls,.csv">
+        <div class="ico">🌊</div>
+        <div class="titulo">Cierres de Puerto</div>
+        <div class="hint">Archivo "Tablero KPI" + hojas mensuales (Ene…Dic)</div>
+        <div class="estado default" id="estado-cierres">Usando datos vigentes (ago-2026)</div>
+      </label>
+
+      <label class="dropzone" id="dz-naves">
+        <input type="file" id="file-naves" accept=".xlsx,.xls,.csv">
+        <div class="ico">🚢</div>
+        <div class="titulo">Naves Aceros Arequipa</div>
+        <div class="hint">Tabla con Nave / Cumplimiento / Costo / Ton-turno-hombre</div>
+        <div class="estado default" id="estado-naves">Usando datos vigentes</div>
+      </label>
+
+      <label class="dropzone" id="dz-rate">
+        <input type="file" id="file-rate" accept=".xlsx,.xls,.csv">
+        <div class="ico">📦</div>
+        <div class="titulo">Estadística Operacional de Naves</div>
+        <div class="hint">Rate/día por producto (Caliza · Soda) y tonelaje total — año 2026</div>
+        <div class="estado default" id="estado-rate">Usando datos vigentes (2026)</div>
+      </label>
+
+      <label class="dropzone" id="dz-seguridad">
+        <input type="file" id="file-seguridad" accept=".xlsx,.xls,.csv">
+        <div class="ico">🦺</div>
+        <div class="titulo">Seguridad (HTP / Reloncaví)</div>
+        <div class="hint">Accidentes con tiempo perdido y días perdidos</div>
+        <div class="estado default" id="estado-seguridad">Usando datos vigentes</div>
+      </label>
+
+      <label class="dropzone" id="dz-ocupacion">
+        <input type="file" id="file-ocupacion" accept=".xlsx,.xls,.csv">
+        <div class="ico">⚓</div>
+        <div class="titulo">Ocupación de Muelle</div>
+        <div class="hint">% Ocupación Sitio Norte / Sitio Sur por año y mes</div>
+        <div class="estado default" id="estado-ocupacion">Usando datos vigentes</div>
+      </label>
+
+    </div>
+    <button type="button" class="btn-apply" id="btnApplyClose">Listo, ver tablero</button>
+  </div>
+</div>
+
+<script>
+const AZUL = '#1F3A6E', NARANJA = '#E8804A', AZULCLARO = '#4A6FA5',
+      GRIS = '#B9C2D6', VERDE = '#3E8E5A', ROJO='#C64B3C';
+
+if(typeof Chart !== 'undefined'){
+  Chart.defaults.font.family = "'Montserrat', Arial, sans-serif";
+  Chart.defaults.color = '#3A4257';
+  Chart.defaults.font.size = 10.5;
+  if(window.ChartDataLabels) Chart.register(ChartDataLabels);
+  Chart.defaults.set('plugins.datalabels', { display:false });
+}
+
+const fmtInt   = n => Math.round(n).toLocaleString('es-CL');
+const fmtMoney = n => '$' + Math.round(n).toLocaleString('es-CL');
+const fmtPct   = n => (n*100).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%';
+const fmt1     = n => n.toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1});
+
+let DATA = {
+  acerosAB: {
+    nombres: ['ICELAND BULKER'],
+    rateLogrado: [1611],
+    rateContratado: [3500],
+    costoProgramado: [5.5],
+    costoLogrado: [9.2],
+    tonsHr: [67.1],
+    tonsTotales: [10272.84]
+  },
+  tonelaje: {
+    anual: [
+      {anio:2022, total:2291235, aLaFecha:false},
+      {anio:2023, total:2291157, aLaFecha:false},
+      {anio:2024, total:1329364, aLaFecha:false},
+      {anio:2025, total:606779, aLaFecha:false},
+      {anio:2026, total:472749.7, aLaFecha:true}
+    ],
+    porProducto2026: [
+      {producto:'Caliza', total:178511.9},
+      {producto:'Soda Cáustica', total:173779.3},
+      {producto:'Productos de Acero', total:53649.5},
+      {producto:'Granza / Finos', total:41352.3},
+      {producto:'Chatarra', total:14008.5},
+      {producto:'Carbón y Coque', total:11007.4},
+      {producto:'Carga General / Proyecto', total:410.5}
+    ],
+    mensual2026: [
+      {mes:'Enero', total:49973.4},
+      {mes:'Febrero', total:26484.6},
+      {mes:'Marzo', total:35711.2},
+      {mes:'Abril', total:81922.9},
+      {mes:'Mayo', total:125563.2},
+      {mes:'Junio', total:44796.5},
+      {mes:'Julio', total:51586.6},
+      {mes:'Agosto', total:56711.3}
+    ]
+  },
+  ocupacion: {
+    anual: [
+      {anio:2022, norte:64.72012362637362, sur:33.77270299145299, aLaFecha:false},
+      {anio:2023, norte:62.39392551892552, sur:16.137248168498168, aLaFecha:false},
+      {anio:2024, norte:30.232496194824964, sur:18.511415525114156, aLaFecha:false},
+      {anio:2025, norte:14.83589920343137, sur:15.860906862745098, aLaFecha:false},
+      {anio:2026, norte:16.464619252873565, sur:21.907327586206897, aLaFecha:true}
+    ],
+    mensual2026: [
+      {mes:'Enero', norte:9.24731182795699, sur:33.93817204301075},
+      {mes:'Febrero', norte:0, sur:29.791666666666668},
+      {mes:'Marzo', norte:12.692652329749105, sur:7.844982078853047},
+      {mes:'Abril', norte:24.34722222222222, sur:14.715277777777779},
+      {mes:'Mayo', norte:43.0152329749104, sur:36.19175627240143},
+      {mes:'Junio', norte:9.233796296296296, sur:9.625},
+      {mes:'Julio', norte:9.101851851851851, sur:24.893518518518515},
+      {mes:'Agosto', norte:16.9578853046595, sur:11.422491039426523},
+      {mes:'Anual a la fecha', norte:16.464619252873565, sur:21.907327586206897, destacado:true}
+    ]
+  },
+  seguridad: {
+    meses: ['Enero','Febrero','Marzo','Abril','Mayo','Junio'],
+    htp: {
+      responsable: 'Juan Sanhueza',
+      metaAccidentes: 0,
+      metaDiasPerdidos: 0,
+      accidentesAnio: {2021:1, 2022:1},
+      accidentesMes: [0,0,1,0,0,0],
+      diasPerdidosAnio: {2021:19, 2022:44},
+      diasPerdidosMes: [0,0,30,14,0,0],
+      cumpleAccidentes: 'NO CUMPLE',
+      cumpleDiasPerdidos: null
+    },
+    reloncavi: {
+      responsable: null,
+      metaAccidentes: 0,
+      metaDiasPerdidos: 0,
+      accidentesAnio: {2021:0, 2022:0},
+      accidentesMes: [0,0,0,0,0,0],
+      diasPerdidosAnio: {2021:0, 2022:0},
+      diasPerdidosMes: [0,0,0,0,0,0],
+      cumpleAccidentes: 'CUMPLE',
+      cumpleDiasPerdidos: 'CUMPLE'
+    }
+  },
+  cppt: {
+    meses: ['Febrero','Marzo','Abril','Mayo','Junio','Julio'],
+    turnosCubrir:   [320,320,320,320,320,320],
+    turnosEfectivos:[218,281,523,895,301,441],
+    pctCobertura:   [0.68125,0.878125,1.634375,2.796875,0.940625,1.378125],
+    objetados:      [82,35,0,0,83,4],
+    ahorro:         [6826336,2913680,0,0,7085046,341448],
+    cobro:          [3329920,4245648,0,0,170724,0],
+    totalAhorro: 17166510,
+    totalCobro: 7746292,
+    coberturaPonderada: 1.3848958333333334
+  },
+  cierres: {
+    meses: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
+    registrados: [0,0,6,1,2,0,2,3,0,0,0,0],
+    afectaronOp: [0,0,1,0,2,0,2,2,0,0,0,0],
+    hrsAfectacion:[0,0,15.5,0,57.566667,0,191.4,31.666667,0,0,0,0],
+    causas: {'Mal Tiempo':8,'Cerrazón de Niebla':4,'Altura de Ola / Viento':2},
+    totalRegistrados: 14,
+    totalAfectaron: 7,
+    totalHrs: 296.133333,
+    pctIndisponibilidad: 0.03380517503794853
+  },
+  naves: {
+    nombres: ['OSLO BULK','CONDOR MAGALLANES','ANTHEIA','DRACO FAITH V1','CENA FAITH','BALSA 84','DRACO FAITH V2','MAPLE GRACE'],
+    cumplimiento: [0.926,1.102,1.159333,1.175667,1.054667,0.660333,1.191,1.176333],
+    costoTransf:  [7.266207,5.194816,4.64943,5.204588,5.075045,4.22953,4.841024,4.99514],
+    tonTurnoHombre:[26.042105,28.328521,32.464313,31.721088,31.094883,35.30137,32.227778,28.87766],
+    tonsTotales:  [4948,5439.076,5389.076,4663,5317.225,5154,5801,5429],
+    dotacion:     [190,192,166,147,171,146,180,188],
+    rateLogrado:  [2778,3306,3478,3527,3164,1981,3573,3529],
+    rateContratado:[3000,3000,3000,3000,3000,3000,3000,3000],
+    tonsTransferidas: 42140,
+    costoPromedio: 5.07
+  },
+  rate: {
+    caliza: [
+      {nave:'KARVUNA', logrado:10079.1, contratado:9142.9}
+    ],
+    soda: [
+      {nave:'GINGA PRETIGE',     logrado:13333.3, contratado:10000},
+      {nave:'MARITIME GISELA',   logrado:12050.9, contratado:10000},
+      {nave:'BOW PERSISTENT',    logrado:11647.1, contratado:10000},
+      {nave:'FORTE GALAXY',      logrado:11637.4, contratado:10000},
+      {nave:'SHAMROCK MERCURY',  logrado:11183.1, contratado:10000},
+      {nave:'PHEASANT',          logrado:11140.9, contratado:10000},
+      {nave:'XENA',              logrado:11093.1, contratado:10000},
+      {nave:'BOW PERFORMER',     logrado:10718.3, contratado:10000},
+      {nave:'GINGA MAYA',        logrado:10617.8, contratado:10000},
+      {nave:'MOCKINGBIRD',       logrado:10554.5, contratado:10000},
+      {nave:'GINGA GRUTTO',      logrado:10443.3, contratado:10000},
+      {nave:'CAIFU CHAO',        logrado:10343.5, contratado:10000},
+      {nave:'SPARROWHAWK',       logrado:6802.2,  contratado:10000}
+    ],
+    karvuna: [
+      {label:'Ene · Chatarra',    logrado:3645.2,  contratado:3500, caliza:false},
+      {label:'Mar · C.General',   logrado:189.7,   contratado:null, caliza:false},
+      {label:'Abr · Caliza (1)',  logrado:10116.2, contratado:9000, caliza:true},
+      {label:'Abr · Caliza (2)',  logrado:10550.5, contratado:null, caliza:true},
+      {label:'May · Caliza (1)',  logrado:10808.4, contratado:9000, caliza:true},
+      {label:'May · Caliza (2)',  logrado:9963.9,  contratado:null, caliza:true},
+      {label:'Jun · Caliza',      logrado:10084.9, contratado:10000,caliza:true},
+      {label:'Jul · Caliza',      logrado:9279.2,  contratado:9000, caliza:true},
+      {label:'Ago · Caliza (1)',  logrado:9179.8,  contratado:9000, caliza:true},
+      {label:'Ago · Caliza (2)',  logrado:11002.1, contratado:9000, caliza:true},
+      {label:'Ago · Caliza (3)',  logrado:9727.3,  contratado:9000, caliza:true}
+    ]
+  }
+};
+
+let charts = {};
+
+function destroy(id){ if(charts[id]){ charts[id].destroy(); } }
+
+const dlBase = {
+  anchor:'end', align:'end', offset:2, color:'#3A4257',
+  font:{size:8.5, weight:'600', family:"'Montserrat', Arial, sans-serif"},
+  rotation:-45
+};
+
+function labelFmt(fn){ return (value, context) => fn(value); }
+
+function barLine(id, labels, barDatasets, lineDataset, fmt=fmtInt){
+  destroy(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  const datasets = barDatasets.map((d,i)=>({
+    type:'bar',
+    borderRadius:2,
+    datalabels: { ...dlBase, display:true, formatter: labelFmt(fmt) },
+    ...d
+  }));
+  if(lineDataset) datasets.push({type:'line', datalabels:{display:false}, pointRadius:3, borderWidth:2, ...lineDataset});
+  charts[id] = new Chart(ctx, {
+    data:{labels, datasets},
+    options:{
+      responsive:true,
+      layout:{padding:{top:14}},
+      plugins:{
+        legend:{display: datasets.length>1, position:'bottom', labels:{boxWidth:10, font:{size:9.5}}}
+      },
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}}},
+        ...(lineDataset && lineDataset.yAxisID==='y1' ? {y1:{position:'right', beginAtZero:true, grid:{drawOnChartArea:false}, ticks:{font:{size:9}}}} : {}),
+        x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45, minRotation:0}}
+      }
+    }
+  });
+}
+
+function pieChart(id, labels, values, colors){
+  destroy(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  const total = values.reduce((a,b)=>a+b,0);
+  charts[id] = new Chart(ctx, {
+    type:'pie',
+    data:{labels, datasets:[{data:values, backgroundColor:colors, borderWidth:2, borderColor:'#fff'}]},
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'bottom', labels:{boxWidth:10,font:{size:9.5}}},
+        datalabels:{
+          display:true,
+          color:'#fff',
+          font:{size:9, weight:'700'},
+          formatter:(v,ctx)=>{
+            const pct = total? (v/total*100).toFixed(0):0;
+            return ctx.chart.data.labels[ctx.dataIndex] + '\n' + v + ' · ' + pct + '%';
+          }
+        }
+      }
+    }
+  });
+}
+
+function rateChart(id, labels, logrado, contratado, barColor, fmt=fmtInt){
+  destroy(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    data:{
+      labels,
+      datasets:[
+        {
+          type:'bar', label:'Rate logrado (Tons/día)', data:logrado,
+          backgroundColor:barColor, borderRadius:2,
+          datalabels:{...dlBase, display:true, formatter: labelFmt(fmt)}
+        },
+        {
+          type:'line', label:'Rate contratado (Tons/día)', data:contratado,
+          borderColor:ROJO, backgroundColor:ROJO, borderDash:[6,4],
+          borderWidth:2, pointRadius:3, pointBackgroundColor:ROJO, spanGaps:true,
+          datalabels:{display:false}
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      layout:{padding:{top:16}},
+      plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:9.5}}}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}}},
+        x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45, minRotation:0}}
+      }
+    }
+  });
+}
+
+function singleBar(id, labels, values, color, fmt=fmtInt){
+  destroy(id);
+  const ctx = document.getElementById(id).getContext('2d');
+  charts[id] = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{
+      label:'', data:values, backgroundColor:color, borderRadius:2,
+      datalabels:{...dlBase, display:true, formatter: labelFmt(fmt)}
+    }]},
+    options:{
+      responsive:true,
+      layout:{padding:{top:14}},
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}}},
+        x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45, minRotation:0}}
+      }
+    }
+  });
+}
+
+function sum2022(anioObj){ return anioObj && anioObj[2022] != null ? anioObj[2022] : 0; }
+
+function chipClass(status){
+  if(!status) return 'neutral';
+  return status.toUpperCase().includes('NO') ? 'warn' : 'ok';
+}
+
+function renderSeguridad(){
+  const d = DATA.seguridad;
+  const h = d.htp, r = d.reloncavi;
+
+  const totalAccHTP = sum2022(h.accidentesAnio);
+  const totalDiasHTP = sum2022(h.diasPerdidosAnio);
+  const totalAccRel = sum2022(r.accidentesAnio);
+  const totalDiasRel = sum2022(r.diasPerdidosAnio);
+
+  document.getElementById('insightSeguridad').innerHTML =
+    `<b>INSIGHT SEGURIDAD ·</b> Meta = 0 accidentes y 0 días perdidos en ambos terminales (tolerancia cero). ` +
+    `HTP registra ${fmtInt(totalAccHTP)} accidente(s) con tiempo perdido y ${fmtInt(totalDiasHTP)} día(s) perdido(s) acumulados en 2022` +
+    (h.cumpleAccidentes ? ` (${h.cumpleAccidentes})` : '') + `. ` +
+    `Reloncaví registra ${fmtInt(totalAccRel)} accidente(s) y ${fmtInt(totalDiasRel)} día(s) perdido(s)` +
+    (r.cumpleAccidentes ? ` (${r.cumpleAccidentes})` : '') + `.`;
+
+  const miniCards = [
+    {terminal:'HTP', valor:fmtInt(totalAccHTP), etiqueta:'Accidentes con tiempo perdido (2022)', status:h.cumpleAccidentes},
+    {terminal:'HTP', valor:fmtInt(totalDiasHTP), etiqueta:'Días perdidos acumulados (2022)', status:h.cumpleDiasPerdidos},
+    {terminal:'RELONCAVÍ', valor:fmtInt(totalAccRel), etiqueta:'Accidentes con tiempo perdido (2022)', status:r.cumpleAccidentes},
+    {terminal:'RELONCAVÍ', valor:fmtInt(totalDiasRel), etiqueta:'Días perdidos acumulados (2022)', status:r.cumpleDiasPerdidos}
+  ];
+  document.getElementById('kpiMiniSeguridad').innerHTML = miniCards.map(c=>{
+    const cls = chipClass(c.status);
+    return `<div class="kpi-mini-card ${cls}">
+      <div class="terminal">${c.terminal}</div>
+      <div class="valor">${c.valor}</div>
+      <div class="etiqueta">${c.etiqueta}</div>
+      ${c.status ? `<div class="status-chip ${cls}">${c.status}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  barLine('chartSegAccidentes', d.meses,
+    [
+      {label:'HTP', data:h.accidentesMes, backgroundColor:AZUL},
+      {label:'Reloncaví', data:r.accidentesMes, backgroundColor:AZULCLARO}
+    ],
+    {label:'Meta', data:d.meses.map(()=>Math.max(h.metaAccidentes, r.metaAccidentes)), borderColor:ROJO, backgroundColor:ROJO, borderDash:[6,4], pointRadius:0, tension:0}
+  );
+  barLine('chartSegDias', d.meses,
+    [
+      {label:'HTP', data:h.diasPerdidosMes, backgroundColor:AZUL},
+      {label:'Reloncaví', data:r.diasPerdidosMes, backgroundColor:AZULCLARO}
+    ],
+    {label:'Meta', data:d.meses.map(()=>Math.max(h.metaDiasPerdidos, r.metaDiasPerdidos)), borderColor:ROJO, backgroundColor:ROJO, borderDash:[6,4], pointRadius:0, tension:0}
+  );
+}
+
+function renderCppt(){
+  const d = DATA.cppt;
+  barLine('chartCppt1', d.meses,
+    [
+      {label:'Turnos a cubrir', data:d.turnosCubrir, backgroundColor:AZUL},
+      {label:'Turnos efectivos', data:d.turnosEfectivos, backgroundColor:NARANJA}
+    ],
+    {label:'% Cobertura', data:d.pctCobertura.map(v=>v*100), borderColor:AZULCLARO, backgroundColor:AZULCLARO, yAxisID:'y1', tension:.3},
+    fmtInt
+  );
+  barLine('chartCppt2', d.meses,
+    [
+      {label:'Ahorro ($)', data:d.ahorro, backgroundColor:VERDE},
+      {label:'Cobro CPPT ($)', data:d.cobro, backgroundColor:NARANJA}
+    ],
+    null,
+    n => n>=1000 ? (n/1000000).toLocaleString('es-CL',{maximumFractionDigits:1})+'M' : fmtInt(n)
+  );
+  singleBar('chartCppt3', d.meses, d.objetados, NARANJA, fmtInt);
+}
+
+function renderCierres(){
+  const d = DATA.cierres;
+  barLine('chartCierre1', d.meses,
+    [
+      {label:'Cierres registrados', data:d.registrados, backgroundColor:AZUL},
+      {label:'Afectaron operación', data:d.afectaronOp, backgroundColor:NARANJA}
+    ]
+  );
+  singleBar('chartCierre2', d.meses, d.hrsAfectacion.map(v=>Math.round(v*10)/10), ROJO, v=>fmt1(v));
+  const labels = Object.keys(d.causas);
+  const values = Object.values(d.causas);
+  pieChart('chartCierre3', labels, values, [AZUL, NARANJA, AZULCLARO, GRIS]);
+}
+
+function renderNaves(){
+  const d = DATA.naves;
+  rateChart('chartNave1', d.nombres, d.rateLogrado, d.rateContratado, VERDE, fmtInt);
+  singleBar('chartNave2', d.nombres, d.costoTransf.map(v=>Math.round(v*100)/100), NARANJA, v=>'$'+fmt1(v));
+  singleBar('chartNave3', d.nombres, d.tonTurnoHombre.map(v=>Math.round(v*10)/10), AZUL, v=>fmt1(v));
+}
+
+function avg(arr){ return arr.reduce((a,b)=>a+b,0)/arr.length; }
+
+function renderRate(){
+  const caliza = DATA.rate.caliza;
+  const soda = DATA.rate.soda;
+  rateChart('chartRateCaliza', caliza.map(i=>i.nave), caliza.map(i=>Math.round(i.logrado)), caliza.map(i=>i.contratado||null), AZUL, fmtInt);
+  rateChart('chartRateSoda', soda.map(i=>i.nave), soda.map(i=>Math.round(i.logrado)), soda.map(i=>i.contratado||null), AZULCLARO, fmtInt);
+
+  const karv = DATA.rate.karvuna;
+  destroy('chartRateKarvuna');
+  const ctxK = document.getElementById('chartRateKarvuna').getContext('2d');
+  charts['chartRateKarvuna'] = new Chart(ctxK, {
+    data:{
+      labels: karv.map(k=>k.label),
+      datasets:[
+        {
+          type:'bar', label:'Rate logrado (Tons/día)',
+          data: karv.map(k=>Math.round(k.logrado)),
+          backgroundColor: karv.map(k=> k.caliza ? AZUL : NARANJA),
+          borderRadius:2,
+          datalabels:{...dlBase, display:true, formatter: labelFmt(fmtInt)}
+        },
+        {
+          type:'line', label:'Rate contratado (Tons/día)',
+          data: karv.map(k=>k.contratado),
+          borderColor:ROJO, backgroundColor:ROJO, borderDash:[6,4],
+          borderWidth:2, pointRadius:3, pointBackgroundColor:ROJO, spanGaps:true,
+          datalabels:{display:false}
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      layout:{padding:{top:16}},
+      plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:9.5}}}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}}},
+        x:{ticks:{font:{size:8.5}, autoSkip:false, maxRotation:45, minRotation:0}}
+      }
+    }
+  });
+
+  const avgCalizaLog = avg(caliza.map(i=>i.logrado));
+  const avgCalizaCon = avg(caliza.map(i=>i.contratado));
+  const avgSodaLog = avg(soda.map(i=>i.logrado));
+  const avgSodaCon = avg(soda.map(i=>i.contratado));
+  const cumplCaliza = avgCalizaLog/avgCalizaCon;
+  const cumplSoda = avgSodaLog/avgSodaCon;
+
+  document.getElementById('insightRate').innerHTML =
+    `<b>INSIGHT 2026 ·</b> Caliza: ${fmt1(avgCalizaLog)} Tons/día logrado vs. ${fmt1(avgCalizaCon)} contratado ` +
+    `(cumplimiento ${fmtPct(cumplCaliza)}, ${caliza.length} nave${caliza.length>1?'s':''}). ` +
+    `Soda Cáustica: ${fmt1(avgSodaLog)} Tons/día logrado vs. ${fmt1(avgSodaCon)} contratado ` +
+    `(cumplimiento ${fmtPct(cumplSoda)}, ${soda.length} naves).`;
+}
+
+function renderOcupacion(){
+  const d = DATA.ocupacion;
+  const anual = d.anual;
+  const mensual = d.mensual2026;
+
+  const labelsAnual = anual.map(a => a.aLaFecha ? a.anio+' (a la fecha)' : String(a.anio));
+  barLine('chartOcupAnual', labelsAnual,
+    [
+      {label:'Sitio Norte', data:anual.map(a=>Math.round(a.norte*10)/10), backgroundColor:AZUL},
+      {label:'Sitio Sur', data:anual.map(a=>Math.round(a.sur*10)/10), backgroundColor:AZULCLARO}
+    ],
+    null,
+    v => fmt1(v)+'%'
+  );
+
+  const labelsMes = mensual.map(m=>m.mes);
+  barLine('chartOcup2026', labelsMes,
+    [
+      {label:'Sitio Norte', data:mensual.map(m=>Math.round(m.norte*10)/10), backgroundColor: mensual.map(m=> m.destacado ? NARANJA : AZUL)},
+      {label:'Sitio Sur', data:mensual.map(m=>Math.round(m.sur*10)/10), backgroundColor: mensual.map(m=> m.destacado ? '#c96a30' : AZULCLARO)}
+    ],
+    null,
+    v => fmt1(v)+'%'
+  );
+
+  const ultimo = anual[anual.length-1];
+  const anioAnterior = anual.length>1 ? anual[anual.length-2] : null;
+  const mejorMesNorte = mensual.slice(0,-1).reduce((best,m)=> m.norte>best.norte?m:best, mensual[0]);
+  const mejorMesSur = mensual.slice(0,-1).reduce((best,m)=> m.sur>best.sur?m:best, mensual[0]);
+
+  document.getElementById('insightOcupacion').innerHTML =
+    `<b>INSIGHT OCUPACIÓN ·</b> ${ultimo.anio} (a la fecha): Sitio Norte ${fmt1(ultimo.norte)}% · Sitio Sur ${fmt1(ultimo.sur)}% de ocupación. ` +
+    (anioAnterior ? `Respecto a ${anioAnterior.anio} (Norte ${fmt1(anioAnterior.norte)}% · Sur ${fmt1(anioAnterior.sur)}%), ` +
+      `Norte ${ultimo.norte>=anioAnterior.norte?'sube':'baja'} y Sur ${ultimo.sur>=anioAnterior.sur?'sube':'baja'}. ` : '') +
+    `Mes de mayor ocupación 2026: Norte en ${mejorMesNorte.mes} (${fmt1(mejorMesNorte.norte)}%), Sur en ${mejorMesSur.mes} (${fmt1(mejorMesSur.sur)}%).`;
+}
+
+function renderTonelaje(){
+  const d = DATA.tonelaje;
+  const anual = d.anual;
+  const mensual = d.mensual2026;
+
+  const labelsAnual = anual.map(a => String(a.anio));
+  destroy('chartTonAnual');
+  const ctxAnual = document.getElementById('chartTonAnual').getContext('2d');
+  charts['chartTonAnual'] = new Chart(ctxAnual, {
+    type:'bar',
+    data:{
+      labels: labelsAnual,
+      datasets:[{
+        data: anual.map(a=>Math.round(a.total)),
+        backgroundColor: AZUL,
+        borderRadius:2,
+        datalabels:{
+          display:true, anchor:'end', align:'end', offset:2,
+          color:'#1B2233', font:{size:11, weight:'700'},
+          formatter: v => fmtInt(v)
+        }
+      }]
+    },
+    options:{
+      responsive:true,
+      layout:{padding:{top:22}},
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}, callback:v=>fmtInt(v)}},
+        x:{ticks:{font:{size:11, weight:'600'}}}
+      }
+    }
+  });
+
+  const labelsMes = mensual.map(m=>m.mes);
+  barLine('chartTonMes', labelsMes,
+    [{label:'Total transferido (Tons)', data:mensual.map(m=>Math.round(m.total)), backgroundColor:NARANJA}],
+    null,
+    fmtInt
+  );
+
+  const aniosCompletos = anual.filter(a=>!a.aLaFecha);
+  const primero = aniosCompletos[0] || anual[0];
+  const ultimoCompleto = aniosCompletos[aniosCompletos.length-1] || anual[anual.length-1];
+  const variacion = primero.total ? ((ultimoCompleto.total - primero.total) / primero.total) * 100 : 0;
+  const signo = variacion>=0 ? '+' : '';
+
+  document.getElementById('statTonelaje').textContent = signo+Math.round(variacion)+'%';
+  document.getElementById('descTonelaje').innerHTML =
+    `El volumen transferido ${variacion<0?'cayó':'subió'} cerca de <b>${Math.abs(Math.round(variacion))}%</b> entre ${primero.anio} y ${ultimoCompleto.anio} (último año completo).`;
+
+  const productos = d.porProducto2026.slice().sort((a,b)=>b.total-a.total);
+  const totalProducto = productos.reduce((a,p)=>a+p.total,0);
+  document.getElementById('badgeTotalProducto').textContent = `TOTAL 2026: ${fmtInt(totalProducto)} t`;
+
+  const coloresProducto = [AZUL, AZULCLARO, '#16294f', '#F0A876', '#8B3A2A', NARANJA, '#E8E8EC'];
+  destroy('chartTonProducto');
+  const ctxProd = document.getElementById('chartTonProducto').getContext('2d');
+  charts['chartTonProducto'] = new Chart(ctxProd, {
+    type:'bar',
+    data:{
+      labels: productos.map(p=>p.producto),
+      datasets:[{
+        data: productos.map(p=>Math.round(p.total)),
+        backgroundColor: productos.map((_,i)=>coloresProducto[i % coloresProducto.length]),
+        borderRadius:2,
+        datalabels:{
+          display:true, anchor:'end', align:'end', offset:2,
+          color:'#1B2233', font:{size:10.5, weight:'700'},
+          formatter: v => fmtInt(v)
+        }
+      }]
+    },
+    options:{
+      responsive:true,
+      layout:{padding:{top:22}},
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true, ticks:{font:{size:9}, callback:v=>fmtInt(v)}},
+        x:{ticks:{font:{size:9.5}, autoSkip:false, maxRotation:30, minRotation:0}}
+      }
+    }
+  });
+
+  const top2 = productos.slice(0,2).reduce((a,p)=>a+p.total,0);
+  const pctTop2 = totalProducto ? Math.round((top2/totalProducto)*100) : 0;
+  document.getElementById('statProducto').textContent = pctTop2+'%';
+  document.getElementById('descProducto').innerHTML =
+    `<b>${productos[0].producto}</b> y <b>${productos[1].producto}</b> concentran cerca del <b>${pctTop2}%</b> del total transferido en 2026.`;
+}
+
+function renderAcerosAB(){
+  const d = DATA.acerosAB;
+  if(!d.nombres.length){
+    document.getElementById('insightAcerosAB').innerHTML = '<b>SIN DATOS ·</b> No se encontraron recaladas del cliente "A&B" en el año seleccionado.';
+    return;
+  }
+  rateChart('chartAB1', d.nombres, d.rateLogrado, d.rateContratado, AZUL, fmtInt);
+  barLine('chartAB2', d.nombres,
+    [
+      {label:'USD/Ton Programado', data:d.costoProgramado, backgroundColor:AZULCLARO},
+      {label:'USD/Ton Logrado', data:d.costoLogrado, backgroundColor:NARANJA}
+    ],
+    null,
+    v => '$'+fmt1(v)
+  );
+  singleBar('chartAB3', d.nombres, d.tonsHr.map(v=>Math.round(v*10)/10), AZUL, fmt1);
+
+  const cumplimiento = avg(d.rateLogrado.map((v,i)=>v/d.rateContratado[i]));
+  const totalTons = d.tonsTotales.reduce((a,b)=>a+b,0);
+  document.getElementById('insightAcerosAB').innerHTML =
+    `<b>INSIGHT ACEROS A&B ·</b> ${d.nombres.length} nave${d.nombres.length>1?'s':''} registrada${d.nombres.length>1?'s':''} en 2026, ` +
+    `${fmtInt(totalTons)} Tons transferidas. Cumplimiento de rate promedio: ${fmtPct(cumplimiento)}` +
+    (d.nombres.length===1 ? ' (muestra de una sola recalada — el gráfico se ampliará automáticamente si cargas más naves de este cliente).' : '.');
+}
+
+function renderAll(){
+  renderSeguridad();
+  renderCppt();
+  renderCierres();
+  renderNaves();
+  renderRate();
+  renderOcupacion();
+  renderTonelaje();
+  renderAcerosAB();
+}
+
+if(typeof Chart === 'undefined'){
+  document.getElementById('libErrorBanner').classList.add('show');
+} else {
+  renderAll();
+}
+
+function readWorkbook(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = e => {
+      try{
+        const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+        resolve(wb);
+      }catch(err){ reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function sheetToMatrix(ws){
+  return XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+}
+
+function findHeaderRow(matrix, mustContain){
+  for(let r=0; r<matrix.length; r++){
+    const row = matrix[r].map(c => (c==null? '' : String(c).toLowerCase()));
+    const joined = row.join(' | ');
+    if(mustContain.every(k => joined.includes(k))) return r;
+  }
+  return -1;
+}
+
+function colIndexByHeader(headerRow, needle){
+  for(let c=0;c<headerRow.length;c++){
+    const v = headerRow[c];
+    if(v!=null && String(v).toLowerCase().includes(needle)) return c;
+  }
+  return -1;
+}
+
+function parseCppt(wb){
+  let sheetName = wb.SheetNames.find(n=>n.toLowerCase().includes('cppt')) || wb.SheetNames[0];
+  const matrix = sheetToMatrix(wb.Sheets[sheetName]);
+  const hRow = findHeaderRow(matrix, ['mes','cobertura']);
+  if(hRow===-1) throw new Error('No se encontró la tabla de turnos CPPT (encabezado con "Mes" y "% Cobertura").');
+  const header = matrix[hRow];
+  const cMes = colIndexByHeader(header,'mes');
+  const cCubrir = colIndexByHeader(header,'a cubrir');
+  const cEfectivos = colIndexByHeader(header,'efectivos');
+  const cObjetados = colIndexByHeader(header,'objetad');
+  const cCobertura = colIndexByHeader(header,'cobertura');
+  const cCobro = colIndexByHeader(header,'cobro');
+  const cAhorro = colIndexByHeader(header,'ahorro');
+
+  const meses=[],turnosCubrir=[],turnosEfectivos=[],pctCobertura=[],objetados=[],ahorro=[],cobro=[];
+  for(let r=hRow+1; r<matrix.length; r++){
+    const row = matrix[r];
+    const mes = row[cMes];
+    if(mes==null || String(mes).trim()==='') continue;
+    if(String(mes).toUpperCase().includes('TOTAL')) break;
+    meses.push(mes);
+    turnosCubrir.push(Number(row[cCubrir])||0);
+    turnosEfectivos.push(Number(row[cEfectivos])||0);
+    pctCobertura.push(Number(row[cCobertura])||0);
+    objetados.push(cObjetados>-1 ? Number(row[cObjetados])||0 : 0);
+    ahorro.push(cAhorro>-1 ? Number(row[cAhorro])||0 : 0);
+    cobro.push(cCobro>-1 ? Number(row[cCobro])||0 : 0);
+  }
+  const totalAhorro = ahorro.reduce((a,b)=>a+b,0);
+  const totalCobro = cobro.reduce((a,b)=>a+b,0);
+  const coberturaPonderada = avg(pctCobertura);
+  return {meses,turnosCubrir,turnosEfectivos,pctCobertura,objetados,ahorro,cobro,totalAhorro,totalCobro,coberturaPonderada};
+}
+
+const MESES_ORDEN = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MESES_ABREV = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function parseCierres(wb){
+  let sheetName = wb.SheetNames.find(n=>n.toLowerCase().includes('tablero')) || wb.SheetNames[0];
+  const matrix = sheetToMatrix(wb.Sheets[sheetName]);
+  const hRow = findHeaderRow(matrix, ['mes','cierres reg']);
+  if(hRow===-1) throw new Error('No se encontró el resumen mensual de cierres (encabezado con "Mes" y "Cierres Reg.").');
+  const header = matrix[hRow];
+  const cMes = colIndexByHeader(header,'mes');
+  const cReg = colIndexByHeader(header,'cierres reg');
+  const cAfect = colIndexByHeader(header,'afectaron');
+  const cHrs = colIndexByHeader(header,'hrs cierre') > -1 ? colIndexByHeader(header,'hrs cierre') : colIndexByHeader(header,'hrs. cierre');
+
+  const registrados = new Array(12).fill(0);
+  const afectaronOp = new Array(12).fill(0);
+  const hrsAfectacion = new Array(12).fill(0);
+
+  for(let r=hRow+1; r<matrix.length; r++){
+    const row = matrix[r];
+    const mes = row[cMes];
+    if(mes==null || String(mes).trim()==='') continue;
+    if(String(mes).toUpperCase().includes('TOTAL')) break;
+    const idx = MESES_ORDEN.findIndex(m=>m.toLowerCase()===String(mes).trim().toLowerCase());
+    if(idx===-1) continue;
+    registrados[idx] = Number(row[cReg])||0;
+    afectaronOp[idx] = Number(row[cAfect])||0;
+    hrsAfectacion[idx] = cHrs>-1 ? Number(row[cHrs])||0 : 0;
+  }
+
+  const causas = {};
+  MESES_ABREV.forEach(abrev=>{
+    const sn = wb.SheetNames.find(n=> n.trim().toLowerCase()===abrev.toLowerCase());
+    if(!sn) return;
+    const m = sheetToMatrix(wb.Sheets[sn]);
+    const hr = findHeaderRow(m, ['categor']);
+    if(hr===-1) return;
+    const hdr = m[hr];
+    const cFecha = colIndexByHeader(hdr,'fecha inicio');
+    const cCat = colIndexByHeader(hdr,'categor');
+    for(let r=hr+1; r<m.length; r++){
+      const row=m[r];
+      if(cFecha>-1 && (row[cFecha]==null || row[cFecha]==='')) continue;
+      const cat = row[cCat];
+      if(cat==null || String(cat).trim()==='') continue;
+      const key = String(cat).trim();
+      causas[key] = (causas[key]||0)+1;
+    }
+  });
+
+  const totalRegistrados = registrados.reduce((a,b)=>a+b,0);
+  const totalAfectaron = afectaronOp.reduce((a,b)=>a+b,0);
+  const totalHrs = hrsAfectacion.reduce((a,b)=>a+b,0);
+  const pctIndisponibilidad = totalHrs / (12*730);
+
+  return {
+    meses: MESES_ORDEN, registrados, afectaronOp, hrsAfectacion, causas,
+    totalRegistrados, totalAfectaron, totalHrs, pctIndisponibilidad
+  };
+}
+
+function parseNavesAcero(wb){
+  let found = null;
+  for(const sn of wb.SheetNames){
+    const m = sheetToMatrix(wb.Sheets[sn]);
+    const hr = findHeaderRow(m, ['nave','cumplimiento']);
+    if(hr>-1){ found = {matrix:m, hr}; break; }
+  }
+  if(!found) throw new Error('No se encontró una tabla con columnas "Nave" y "Cumplimiento".');
+  const {matrix, hr} = found;
+  const header = matrix[hr];
+  const cNave = colIndexByHeader(header,'nave');
+  const cCumpl = colIndexByHeader(header,'cumplimiento');
+  const cCosto = colIndexByHeader(header,'costo');
+  const cTonTurno = colIndexByHeader(header,'turno-hombre') > -1 ? colIndexByHeader(header,'turno-hombre') : colIndexByHeader(header,'turno hombre');
+  const cTons = colIndexByHeader(header,'tons total');
+  const cDot = colIndexByHeader(header,'dotaci');
+
+  const nombres=[],cumplimiento=[],costoTransf=[],tonTurnoHombre=[],tonsTotales=[],dotacion=[];
+  for(let r=hr+1;r<matrix.length;r++){
+    const row = matrix[r];
+    const nave = row[cNave];
+    if(nave==null || String(nave).trim()==='') continue;
+    if(String(nave).toUpperCase().includes('TOTAL')) break;
+    nombres.push(String(nave).trim());
+    cumplimiento.push(Number(row[cCumpl])||0);
+    costoTransf.push(cCosto>-1?Number(row[cCosto])||0:0);
+    tonTurnoHombre.push(cTonTurno>-1?Number(row[cTonTurno])||0:0);
+    tonsTotales.push(cTons>-1?Number(row[cTons])||0:0);
+    dotacion.push(cDot>-1?Number(row[cDot])||0:0);
+  }
+  const tonsTransferidas = tonsTotales.reduce((a,b)=>a+b,0);
+  const costoPromedio = avg(costoTransf);
+  const RATE_CONTRATO = 3000;
+  const rateLogrado = cumplimiento.map(v=>Math.round(v*RATE_CONTRATO));
+  const rateContratado = nombres.map(()=>RATE_CONTRATO);
+  return {nombres,cumplimiento,costoTransf,tonTurnoHombre,tonsTotales,dotacion,rateLogrado,rateContratado,tonsTransferidas,costoPromedio};
+}
+
+function parseRatePorProducto(wb, anio=2026){
+  let found = null;
+  for(const sn of wb.SheetNames){
+    const m = sheetToMatrix(wb.Sheets[sn]);
+    const hr = findHeaderRow(m, ['producto','rate']);
+    if(hr>-1){ found = {matrix:m, hr}; break; }
+  }
+  if(!found) throw new Error('No se encontró la tabla de estadística operacional (columnas "Producto" y "Rate").');
+  const {matrix, hr} = found;
+  const header = matrix[hr];
+  const cAnio = colIndexByHeader(header,'año');
+  const cNave = colIndexByHeader(header,'nave');
+  const cProducto = colIndexByHeader(header,'producto');
+  let cRateOp = colIndexByHeader(header,'rate operacional');
+  if(cRateOp===-1) cRateOp = colIndexByHeader(header,'rate comercial');
+  const cRateCon = colIndexByHeader(header,'rate contratado');
+
+  const cMes = colIndexByHeader(header,'mes');
+  const cEmbarcadas = colIndexByHeader(header,'toneladas embarcadas');
+  const cDescargado = colIndexByHeader(header,'tonelaje descargado');
+  const cCliente = colIndexByHeader(header,'cliente');
+  const cUsdProg = colIndexByHeader(header,'usd/ton programado');
+  const cUsdLog = colIndexByHeader(header,'usd/ton logrado');
+  const cTonsHr = colIndexByHeader(header,'tons/hr bruto');
+  const caliza = {}, soda = {};
+  const navesRecaladas = {};
+  const tonAnual = {};
+  const tonMensual = {};
+  const tonPorProducto = {};
+  const acerosABList = [];
+  for(let r=hr+1;r<matrix.length;r++){
+    const row = matrix[r];
+    const y = row[cAnio];
+    const nave = row[cNave];
+    const prod = row[cProducto];
+    const mes = row[cMes];
+    const rateOp = Number(row[cRateOp]);
+    const rateCon = Number(row[cRateCon]);
+
+    if(y!=null){
+      const emb = Number(row[cEmbarcadas]) || 0;
+      const desc = Number(row[cDescargado]) || 0;
+      const tonRow = emb + desc;
+      if(tonRow>0){
+        tonAnual[y] = (tonAnual[y]||0) + tonRow;
+        if(Number(y)===Number(anio) && mes){
+          tonMensual[mes] = (tonMensual[mes]||0) + tonRow;
+        }
+        if(Number(y)===Number(anio) && prod){
+          const cat = categorizarProducto(prod);
+          tonPorProducto[cat] = (tonPorProducto[cat]||0) + tonRow;
+        }
+      }
+
+      if(Number(y)===Number(anio) && cCliente>-1 && nave){
+        const cliente = row[cCliente];
+        const clienteNorm = cliente!=null ? String(cliente).trim().toUpperCase().replace(/\s+/g,'') : '';
+        if(clienteNorm==='A&B' && isFinite(rateOp) && rateOp>0){
+          acerosABList.push({
+            nave: String(nave).trim(),
+            rateLogrado: rateOp,
+            rateContratado: isFinite(rateCon) && rateCon>0 ? rateCon : 0,
+            costoProgramado: Number(row[cUsdProg]) || 0,
+            costoLogrado: Number(row[cUsdLog]) || 0,
+            tonsHr: Number(row[cTonsHr]) || 0,
+            tonsTotal: tonRow
+          });
+        }
+      }
+    }
+
+    if(Number(y)!==Number(anio)) continue;
+    if(!nave || !prod) continue;
+    const key = String(nave).trim().toUpperCase().replace(/\s+/g,' ');
+    if(isFinite(rateOp) && rateOp>0 && rateOp<=20000){
+      if(!navesRecaladas[key]) navesRecaladas[key] = [];
+      navesRecaladas[key].push({
+        mes: mes || '',
+        producto: String(prod).trim(),
+        logrado: rateOp,
+        contratado: isFinite(rateCon) && rateCon>0 ? rateCon : null,
+        caliza: String(prod).trim().toLowerCase().startsWith('caliza')
+      });
+    }
+    if(!isFinite(rateOp) || rateOp<=0 || rateOp>20000) continue;
+    const pl = String(prod).trim().toLowerCase();
+    let bucket = null;
+    if(pl.startsWith('caliza')) bucket = caliza;
+    else if(pl.includes('soda')) bucket = soda;
+    if(!bucket) continue;
+    if(!bucket[key]) bucket[key] = {logrados:[], contratados:[]};
+    bucket[key].logrados.push(rateOp);
+    if(isFinite(rateCon) && rateCon>0) bucket[key].contratados.push(rateCon);
+  }
+
+  function toList(bucket){
+    return Object.entries(bucket).map(([nave,v])=>({
+      nave,
+      logrado: avg(v.logrados),
+      contratado: v.contratados.length? avg(v.contratados) : 0
+    })).sort((a,b)=> b.logrado - a.logrado);
+  }
+
+  let navePrincipal = Object.keys(navesRecaladas).find(n=>n.includes('KARVUNA'));
+  if(!navePrincipal){
+    navePrincipal = Object.entries(navesRecaladas).sort((a,b)=>b[1].length-a[1].length)[0]?.[0];
+  }
+  const detalle = navePrincipal ? navesRecaladas[navePrincipal] : [];
+  let contadorProd = {};
+  const karvuna = detalle.map(d=>{
+    const abrevMes = String(d.mes).slice(0,3);
+    const key = abrevMes+'|'+d.producto;
+    contadorProd[key] = (contadorProd[key]||0)+1;
+    const n = detalle.filter(x=>String(x.mes).slice(0,3)===abrevMes && x.producto===d.producto).length;
+    const idx = contadorProd[key];
+    const label = abrevMes+' · '+d.producto+(n>1?' ('+idx+')':'');
+    return {label, logrado:d.logrado, contratado:d.contratado, caliza:d.caliza};
+  });
+
+  return { caliza: toList(caliza), soda: toList(soda), karvuna, tonelaje: buildTonelaje(tonAnual, tonMensual, anio, tonPorProducto), acerosAB: buildAcerosAB(acerosABList) };
+}
+
+function buildAcerosAB(list){
+  if(!list.length) return DATA.acerosAB;
+  return {
+    nombres: list.map(x=>x.nave),
+    rateLogrado: list.map(x=>Math.round(x.rateLogrado)),
+    rateContratado: list.map(x=>x.rateContratado),
+    costoProgramado: list.map(x=>x.costoProgramado),
+    costoLogrado: list.map(x=>x.costoLogrado),
+    tonsHr: list.map(x=>x.tonsHr),
+    tonsTotales: list.map(x=>x.tonsTotal)
+  };
+}
+
+function categorizarProducto(raw){
+  const p = String(raw).trim().toLowerCase();
+  if(p.startsWith('caliza')) return 'Caliza';
+  if(p.includes('soda')) return 'Soda Cáustica';
+  if(p.includes('acero') || p.includes('rollos') || p.includes('plate iron') || p.includes('barras')) return 'Productos de Acero';
+  if(p.includes('finos') || p.includes('granza')) return 'Granza / Finos';
+  if(p.includes('chatarra')) return 'Chatarra';
+  if(p.includes('coque') || p.includes('carbón') || p.includes('carbon') || p.includes('coke')) return 'Carbón y Coque';
+  return 'Carga General / Proyecto';
+}
+
+function buildTonelaje(tonAnual, tonMensual, anioActual, tonPorProducto){
+  const MESES_ORDEN2 = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const combinado = {};
+  DATA.tonelaje.anual.forEach(a => { combinado[a.anio] = a.total; });
+  Object.keys(tonAnual).forEach(y => { combinado[Number(y)] = tonAnual[y]; });
+  const anual = Object.keys(combinado).map(Number).sort((a,b)=>a-b).map(y=>({
+    anio: y, total: combinado[y], aLaFecha: y===Number(anioActual)
+  }));
+  const mensual2026 = MESES_ORDEN2
+    .filter(m => tonMensual[m]!=null)
+    .map(m => ({mes:m, total:tonMensual[m]}));
+  const porProducto2026 = Object.keys(tonPorProducto||{}).length
+    ? Object.entries(tonPorProducto).map(([producto,total])=>({producto,total}))
+    : DATA.tonelaje.porProducto2026;
+  return {
+    anual,
+    mensual2026: mensual2026.length ? mensual2026 : DATA.tonelaje.mensual2026,
+    porProducto2026
+  };
+}
+
+function setupDropzone(zoneId, inputId, estadoId, onFile){
+  const zone = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  const estado = document.getElementById(estadoId);
+
+  async function handleFile(file){
+    if(!file) return;
+    if(typeof XLSX === 'undefined'){
+      estado.textContent = 'Error: la librería XLSX no cargó (revisa tu conexión a internet).';
+      estado.className = 'estado err';
+      return;
+    }
+    if(typeof Chart === 'undefined'){
+      estado.textContent = 'Error: Chart.js no cargó, no se pueden dibujar los gráficos.';
+      estado.className = 'estado err';
+      return;
+    }
+    estado.textContent = 'Procesando "'+file.name+'"…';
+    estado.className = 'estado default';
+    try{
+      const wb = await readWorkbook(file);
+      onFile(wb);
+      estado.textContent = '✔ Cargado: '+file.name;
+      estado.className = 'estado ok';
+      renderAll();
+    }catch(err){
+      console.error(err);
+      estado.textContent = 'Error: '+err.message;
+      estado.className = 'estado err';
+    }
+  }
+
+  input.addEventListener('change', e => handleFile(e.target.files[0]));
+  zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', ()=> zone.classList.remove('drag'));
+  zone.addEventListener('drop', e=>{
+    e.preventDefault();
+    zone.classList.remove('drag');
+    if(e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+}
+
+function parseSeguridadSheet(matrix){
+  function findAnchor(keyword){
+    for(let r=0;r<matrix.length;r++){
+      const row = matrix[r];
+      if(row.some(c => c!=null && String(c).toUpperCase().includes(keyword))) return r;
+    }
+    return -1;
+  }
+  function extractBlock(anchor){
+    if(anchor===-1) return null;
+    const subHeader = matrix[anchor+1] || [];
+    const idRow = matrix[anchor+2] || [];
+    const valorRow = matrix[anchor+3] || [];
+    let kpiCol = -1;
+    (matrix[anchor]||[]).forEach((c,i)=>{ if(c!=null && String(c).toUpperCase().includes('KPI')) kpiCol=i; });
+    const anio = {}, meses = new Array(12).fill(0), semanas = {};
+    for(let c=0;c<subHeader.length;c++){
+      const tipo = subHeader[c]!=null ? String(subHeader[c]).toUpperCase() : '';
+      const id = idRow[c];
+      const val = Number(valorRow[c]) || 0;
+      if(id==null) continue;
+      if(tipo.startsWith('AÑO')) anio[Number(id)] = val;
+      else if(tipo.startsWith('MES')){ const mi = Number(id)-1; if(mi>=0 && mi<12) meses[mi]=val; }
+      else if(tipo.startsWith('SEM')) semanas[Number(id)] = val;
+    }
+    const status = kpiCol>-1 ? (subHeader[kpiCol] || null) : null;
+    return { anio, meses: meses.slice(0,6), semanas, status };
+  }
+  const anchorAcc = findAnchor('ACCIDENTES CON TIEMPO PERDIDO');
+  const anchorDias = findAnchor('DÍAS PERDIDOS') > -1 ? findAnchor('DÍAS PERDIDOS') : findAnchor('DIAS PERDIDOS');
+  const acc = extractBlock(anchorAcc) || {anio:{}, meses:new Array(6).fill(0), status:null};
+  const dias = extractBlock(anchorDias) || {anio:{}, meses:new Array(6).fill(0), status:null};
+
+  let responsable=null, metaAccidentes=0, metaDiasPerdidos=0;
+  for(let r=0;r<matrix.length;r++){
+    const row = matrix[r];
+    const idxResp = row.findIndex(c=> c!=null && String(c).toLowerCase().includes('responsable'));
+    if(idxResp>-1){ responsable = row[idxResp+1] || null; }
+    const idxMA = row.findIndex(c=> c!=null && String(c).toLowerCase().includes('meta accidentes'));
+    if(idxMA>-1){
+      for(let k=idxMA+1;k<row.length;k++){ if(typeof row[k]==='number'){ metaAccidentes=row[k]; break; } }
+    }
+    const idxMD = row.findIndex(c=> c!=null && String(c).toLowerCase().includes('meta días perdidos') || (c!=null && String(c).toLowerCase().includes('meta dias perdidos')));
+    if(idxMD>-1){
+      for(let k=idxMD+1;k<row.length;k++){ if(typeof row[k]==='number'){ metaDiasPerdidos=row[k]; break; } }
+    }
+    if(idxResp>-1 || idxMA>-1 || idxMD>-1) break;
+  }
+
+  return {
+    responsable,
+    metaAccidentes,
+    metaDiasPerdidos,
+    accidentesAnio: acc.anio,
+    accidentesMes: acc.meses,
+    diasPerdidosAnio: dias.anio,
+    diasPerdidosMes: dias.meses,
+    cumpleAccidentes: acc.status,
+    cumpleDiasPerdidos: dias.status
+  };
+}
+
+function parseSeguridad(wb){
+  const snHTP = wb.SheetNames.find(n=>n.toLowerCase().includes('htp')) || wb.SheetNames[0];
+  const snRel = wb.SheetNames.find(n=>n.toLowerCase().includes('reloncav')) || wb.SheetNames[1] || wb.SheetNames[0];
+  const htp = parseSeguridadSheet(sheetToMatrix(wb.Sheets[snHTP]));
+  const reloncavi = parseSeguridadSheet(sheetToMatrix(wb.Sheets[snRel]));
+  return {
+    meses: ['Enero','Febrero','Marzo','Abril','Mayo','Junio'],
+    htp, reloncavi
+  };
+}
+
+function parseOcupacion(wb){
+  const sn = wb.SheetNames.find(n=>n.toLowerCase().includes('ocupac')) || wb.SheetNames[0];
+  const matrix = sheetToMatrix(wb.Sheets[sn]);
+
+  const anual = [];
+  for(let r=0;r<matrix.length;r++){
+    const row = matrix[r];
+    const cell3 = row[3]!=null ? String(row[3]) : '';
+    const m = cell3.match(/OCUPACI[ÓO]N TERMINAL MAR[ÍI]TIMO.*?(\d{4})/i);
+    if(!m) continue;
+    const anio = Number(m[1]);
+    let norte=null, sur=null;
+    for(let rr=r+1; rr<Math.min(r+25, matrix.length); rr++){
+      const lbl = matrix[rr][3];
+      if(lbl!=null && String(lbl).toUpperCase().includes('HRS. DISPONIBLE ANUAL')){
+        norte = Number(matrix[rr][11]);
+        sur = Number(matrix[rr][18]);
+        break;
+      }
+      if(rr>r+1 && String(lbl||'').match(/OCUPACI[ÓO]N TERMINAL MAR[ÍI]TIMO/i)) break;
+    }
+    if(norte!=null && isFinite(norte)) anual.push({anio, norte, sur: isFinite(sur)?sur:0});
+  }
+  anual.sort((a,b)=>a.anio-b.anio);
+  if(anual.length){ anual[anual.length-1].aLaFecha = true; }
+
+  let mensual2026 = [];
+  for(let r=0;r<matrix.length;r++){
+    const row = matrix[r];
+    const cell3 = row[3]!=null ? String(row[3]).toUpperCase() : '';
+    if(cell3.includes('% UTILIZACIÓN TERMINAL') || cell3.includes('% UTILIZACION TERMINAL')){
+      for(let rr=r+1; rr<matrix.length; rr++){
+        const lbl = matrix[rr][4];
+        if(lbl==null || String(lbl).trim()==='') break;
+        const norte = Number(matrix[rr][7]);
+        const sur = Number(matrix[rr][8]);
+        if(!isFinite(norte) && !isFinite(sur)) break;
+        const esAnual = String(lbl).toLowerCase().includes('anual');
+        mensual2026.push({mes: String(lbl).trim(), norte: isFinite(norte)?norte:0, sur: isFinite(sur)?sur:0, destacado: esAnual});
+      }
+      break;
+    }
+  }
+
+  return { anual, mensual2026: mensual2026.length ? mensual2026 : DATA.ocupacion.mensual2026 };
+}
+
+setupDropzone('dz-cppt','file-cppt','estado-cppt', wb => { DATA.cppt = parseCppt(wb); });
+setupDropzone('dz-cierres','file-cierres','estado-cierres', wb => { DATA.cierres = parseCierres(wb); });
+setupDropzone('dz-naves','file-naves','estado-naves', wb => { DATA.naves = parseNavesAcero(wb); });
+setupDropzone('dz-rate','file-rate','estado-rate', wb => {
+  const resultado = parseRatePorProducto(wb, 2026);
+  DATA.rate = { caliza: resultado.caliza, soda: resultado.soda, karvuna: resultado.karvuna };
+  DATA.tonelaje = resultado.tonelaje;
+  DATA.acerosAB = resultado.acerosAB;
+});
+setupDropzone('dz-seguridad','file-seguridad','estado-seguridad', wb => { DATA.seguridad = parseSeguridad(wb); });
+setupDropzone('dz-ocupacion','file-ocupacion','estado-ocupacion', wb => { DATA.ocupacion = parseOcupacion(wb); });
+
+const CLAVE_ACCESO = 'HTP2026';
+
+const modalOverlay = document.getElementById('modalOverlay');
+const passwordOverlay = document.getElementById('passwordOverlay');
+const inputPassword = document.getElementById('inputPassword');
+const passwordError = document.getElementById('passwordError');
+let sesionDesbloqueada = false;
+
+function openModal(){ modalOverlay.classList.add('open'); }
+function closeModal(){ modalOverlay.classList.remove('open'); }
+function openPasswordModal(){
+  passwordError.classList.remove('show');
+  inputPassword.value = '';
+  passwordOverlay.classList.add('open');
+  setTimeout(()=>inputPassword.focus(), 50);
+}
+function closePasswordModal(){ passwordOverlay.classList.remove('open'); }
+
+document.getElementById('btnOpenUpload').addEventListener('click', () => {
+  if(sesionDesbloqueada){ openModal(); } else { openPasswordModal(); }
+});
+document.getElementById('btnCloseUpload').addEventListener('click', closeModal);
+document.getElementById('btnApplyClose').addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', e => { if(e.target === modalOverlay) closeModal(); });
+
+document.getElementById('btnClosePassword').addEventListener('click', closePasswordModal);
+passwordOverlay.addEventListener('click', e => { if(e.target === passwordOverlay) closePasswordModal(); });
+document.getElementById('formPassword').addEventListener('submit', e => {
+  e.preventDefault();
+  if(inputPassword.value === CLAVE_ACCESO){
+    sesionDesbloqueada = true;
+    closePasswordModal();
+    openModal();
+  } else {
+    passwordError.classList.add('show');
+    inputPassword.value = '';
+    inputPassword.focus();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ closeModal(); closePasswordModal(); }
+});
+</script>
+
+</html>
