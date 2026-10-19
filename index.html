@@ -1319,7 +1319,7 @@
       <div id="sobretiempoMesDetalleCompleto" style="display:none;">
       <div class="movilizado-header" style="margin-top:8px;">
         <h3>Calendario del mes</h3>
-        <p>Horas de sobretiempo por persona y día — D = descanso, C = compensado, L = licencia</p>
+        <p>Horas de sobretiempo por persona y día — D = descanso, C = compensado, L = licencia · <b>Clic en una celda para corregirla</b> (las corregidas quedan marcadas con borde rojo)</p>
       </div>
       <div class="chart-box calendario-wrap">
         <table class="tabla-calendario" id="tablaCalendarioST">
@@ -2626,6 +2626,47 @@ function inicializarSelectorSobretiempo(){
   sel.addEventListener('change', renderSobretiempo);
 }
 
+/* ---------- Correcciones manuales del calendario (se mantienen aunque se vuelva a subir el Excel) ---------- */
+function cargarAjustesST(){ return cargarDeStorage('stAjustes') || {}; }
+function ajusteST(mes, persona, dia){ return cargarAjustesST()[`${mes}|${persona}|${dia}`]; }
+function recalcDiarioST(mes){
+  const d = DATA.sobretiempo, filas = (d.datos||{})[mes]; if(!filas || !d.diario || !d.diario[mes]) return;
+  const nDias = diasEnMes(mes);
+  for(let dia=1; dia<=nDias; dia++){
+    let suma = 0; filas.forEach(p=>{ const v=p.dias[dia-1]; if(typeof v==='number') suma+=v; });
+    d.diario[mes].porDia[dia-1] = Math.round(suma*100)/100;
+  }
+}
+function aplicarAjustesST(){
+  const d = DATA.sobretiempo; if(!d || !d.datos) return;
+  const meses = new Set();
+  Object.entries(cargarAjustesST()).forEach(([k,v])=>{
+    const [mes, persona, dia] = k.split('|');
+    const p = (d.datos[mes]||[]).find(x=>x.persona===persona);
+    if(p){ p.dias[Number(dia)-1] = v; meses.add(mes); }
+  });
+  meses.forEach(recalcDiarioST);
+}
+document.addEventListener('click', e=>{
+  const td = e.target.closest('#tablaCalendarioST td[data-st-dia]'); if(!td) return;
+  const mes = document.getElementById('filtroMesSobretiempo').value;
+  const persona = td.dataset.stPersona, dia = Number(td.dataset.stDia);
+  const p = ((DATA.sobretiempo.datos||{})[mes]||[]).find(x=>x.persona===persona); if(!p) return;
+  const actual = p.dias[dia-1];
+  const r = prompt(`${persona} · ${dia} de ${mes}\nEscribe las horas (ej. 9,5), o D / C / L.\nDeja vacío para borrar.`, actual==null ? '' : String(actual).replace('.',','));
+  if(r===null) return;
+  const t = r.trim().toUpperCase();
+  let v = null;
+  if(t==='D' || t==='C' || t==='L') v = t;
+  else if(t!==''){ v = Number(t.replace(',','.')); if(!isFinite(v)){ alert('Valor no válido'); return; } }
+  const aj = cargarAjustesST(); aj[`${mes}|${persona}|${dia}`] = v;
+  guardarEnStorage('stAjustes', aj);
+  p.dias[dia-1] = v;
+  recalcDiarioST(mes);
+  guardarEnStorage('sobretiempo', DATA.sobretiempo);
+  renderSobretiempo();
+});
+
 function renderSobretiempo(){
   const d = DATA.sobretiempo;
   if(!d) return;
@@ -2841,7 +2882,8 @@ function renderSobretiempoMes(d, mes){
   tbodyCal.innerHTML = filasPersonas.map(p=>{
     const celdas = diasArr.map(dia=>{
       const v = p.dias[dia-1];
-      return `<td class="${celdaClase(v)}">${celdaTexto(v)}</td>`;
+      const aj = ajusteST(mes, p.persona, dia)!==undefined;
+      return `<td class="${celdaClase(v)}" data-st-persona="${String(p.persona).replace(/"/g,'&quot;')}" data-st-dia="${dia}" title="Clic para corregir" style="cursor:pointer;${aj?'outline:2px dashed #B5482F;outline-offset:-2px;':''}">${celdaTexto(v)}</td>`;
     }).join('');
     return `<tr><td class="col-persona">${p.persona}</td><td class="col-cargo">${p.cargo}</td>${celdas}</tr>`;
   }).join('');
@@ -4283,6 +4325,7 @@ document.getElementById('fileSobretiempo').addEventListener('change', async e =>
   try{
     const wb = await readWorkbook(file);
     DATA.sobretiempo = parseSobretiempo(wb);
+    aplicarAjustesST();
     guardarEnStorage('sobretiempo', DATA.sobretiempo);
     const sel = document.getElementById('filtroMesSobretiempo');
     sel.innerHTML = '<option value="todos">📊 Vista completa (todos los meses)</option>';
