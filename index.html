@@ -1582,7 +1582,12 @@ const fmt1     = n => n.toLocaleString('es-CL',{minimumFractionDigits:1,maximumF
 ===================================================================== */
 const STORAGE_PREFIX = 'htp_dashboard_';
 function guardarEnStorage(campo, valor){
-  try{ localStorage.setItem(STORAGE_PREFIX+campo, JSON.stringify(valor)); }catch(e){ /* almacenamiento no disponible; se ignora */ }
+  try{ localStorage.setItem(STORAGE_PREFIX+campo, JSON.stringify(valor)); }
+  catch(e){
+    console.warn('No se pudo guardar', campo, e);
+    if(!window.__avisoStorage){ window.__avisoStorage = true;
+      alert('⚠ El navegador no pudo guardar los datos de "'+campo+'" (espacio lleno o modo incógnito).\nSe ven ahora, pero al recargar la página volverán los valores anteriores.'); }
+  }
 }
 function cargarDeStorage(campo){
   try{
