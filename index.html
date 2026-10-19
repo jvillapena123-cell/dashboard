@@ -1355,6 +1355,7 @@
           <div class="kpi-alert-etiqueta">% del Sobretiempo sin Nave en Muelle</div>
         </div>
       </div>
+      <div class="insight" id="diagNavesMes" style="display:none; font-size:12px;"></div>
       <div class="chart-grid" style="grid-template-columns:1fr;" id="bloqueSTPorNaveChart">
         <div class="chart-box tall"><div class="chart-title">Sobretiempo del mes asociado a cada nave (h)</div><canvas id="chartSTMPorNave"></canvas></div>
       </div>
@@ -2702,12 +2703,31 @@ function renderSobretiempoTodos(d){
 /* ---------- Cruce: Sobretiempo por Nave (usa DATA.recaladas, cargado en la sección de Estadística de Naves) ---------- */
 function calcularSobretiempoPorNave(mesNombre){
   const diario = (DATA.sobretiempo.diario||{})[mesNombre];
-  const recaladas = (DATA.recaladas||[]).filter(r=>r.arribo && r.zarpe);
+  const mesIdx = MES_A_INDICE[mesNombre];
+  const hoy = new Date();
+  const recaladas = (DATA.recaladas||[]).filter(r=>r.arribo || r.zarpe).map(r=>{
+    let a = r.arribo ? new Date(r.arribo) : null;
+    let z = r.zarpe ? new Date(r.zarpe) : null;
+    let sinZarpe = false;
+    if(a && !z){ // sin zarpe: se asume que sigue atracada (hasta hoy, máx. 30 días)
+      sinZarpe = true;
+      z = new Date(Math.min(hoy.getTime(), a.getTime() + 30*86400000));
+    }
+    if(!a && z) a = new Date(z.getFullYear(), z.getMonth(), z.getDate());
+    if(z < a){ const t=a; a=z; z=t; }
+    return {...r, _a:a, _z:z, _sinZarpe:sinZarpe};
+  });
   const filasPersonas = (DATA.sobretiempo.datos||{})[mesNombre] || [];
   if(!diario || !recaladas.length) return null;
 
   const nDias = diasEnMes(mesNombre);
-  const mesIdx = MES_A_INDICE[mesNombre];
+  // Diagnóstico: naves del mes según la Estadística y cuáles se pudieron ubicar por fecha
+  const inicioMes = new Date(2026, mesIdx, 1).getTime(), finMes = new Date(2026, mesIdx, nDias, 23,59,59).getTime();
+  const enMes = recaladas.filter(r=>r._a.getTime() <= finMes && r._z.getTime() >= inicioMes);
+  const nombresConFecha = new Set(enMes.map(r=>r.nave.toUpperCase()));
+  const sinFechaDelMes = [...new Set((DATA.recaladas||[])
+    .filter(r=>Number(r.anio)===2026 && r.mes===mesNombre && !r.arribo && !r.zarpe)
+    .map(r=>r.nave))].filter(n=>!nombresConFecha.has(n.toUpperCase()));
   const porNave = {}; // {nave: horas}
   let horasSinNave = 0;
   let horasConNave = 0; // suma por día (una sola vez por día, sin duplicar si hay 2+ naves ese día)
@@ -2720,8 +2740,9 @@ function calcularSobretiempoPorNave(mesNombre){
     const inicioDia = new Date(2026, mesIdx, dia, 0,0,0).getTime();
     const finDia = new Date(2026, mesIdx, dia, 23,59,59).getTime();
     const navesDelDia = recaladas.filter(r=>{
-      const a = new Date(r.arribo).getTime();
-      const z = new Date(r.zarpe).getTime();
+      // se compara por día calendario: si la nave estuvo atracada en cualquier momento de ese día, cuenta
+      const a = new Date(r._a.getFullYear(), r._a.getMonth(), r._a.getDate()).getTime();
+      const z = new Date(r._z.getFullYear(), r._z.getMonth(), r._z.getDate(), 23,59,59).getTime();
       return a <= finDia && z >= inicioDia;
     }).map(r=>r.nave);
     const unicas = [...new Set(navesDelDia)];
@@ -2741,7 +2762,7 @@ function calcularSobretiempoPorNave(mesNombre){
   const lista = Object.entries(porNave).map(([nave,horas])=>({nave,horas})).sort((a,b)=>b.horas-a.horas);
   const totalDias = horasConNave + horasSinNave;
   return {
-    lista, horasSinNave, horasConNave, detalleSinNave,
+    lista, horasSinNave, horasConNave, detalleSinNave, enMes, sinFechaDelMes,
     pctConNave: totalDias ? horasConNave/totalDias : 0,
     pctSinNave: totalDias ? horasSinNave/totalDias : 0
   };
@@ -2924,11 +2945,21 @@ function renderSobretiempoMes(d, mes){
     bloqueNave.style.display = 'none';
     bloqueNaveChart.style.display = 'none';
     avisoSinNaves.style.display = '';
+    const dg = document.getElementById('diagNavesMes'); if(dg) dg.style.display = 'none';
   } else {
     bloqueNave.style.display = '';
     bloqueNaveChart.style.display = '';
     avisoSinNaves.style.display = 'none';
     document.getElementById('stmPctConNave').textContent = fmtPct(cruceNave.pctConNave);
+    const diag = document.getElementById('diagNavesMes');
+    const fd = x => x.toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    const itemsNave = (cruceNave.enMes||[]).sort((x,y)=>x._a-y._a)
+      .map(r=>`${r.nave} (${fd(r._a)} → ${r._sinZarpe ? 'sin zarpe, se asume en muelle' : fd(r._z)})`);
+    let htmlDiag = `<b>Naves ubicadas en ${mes} por fecha de Arribo/Zarpe (${itemsNave.length}):</b> ` + (itemsNave.length ? itemsNave.join(' · ') : 'ninguna');
+    if((cruceNave.sinFechaDelMes||[]).length){
+      htmlDiag += `<br><b style="color:#B5482F">⚠ Naves de ${mes} en la Estadística sin fecha de Arribo/Zarpe legible (no se consideraron):</b> ${cruceNave.sinFechaDelMes.join(', ')}. Revisa que esas celdas tengan fecha en el Excel y vuelve a subir el archivo.`;
+    }
+    diag.innerHTML = htmlDiag; diag.style.display = '';
     document.getElementById('stmPctSinNave').textContent = fmtPct(cruceNave.pctSinNave);
     const lista = cruceNave.lista;
     const labels = lista.map(x=>x.nave).concat(cruceNave.horasSinNave>0 ? ['Sin nave en muelle'] : []);
@@ -3427,8 +3458,13 @@ function parseRecaladas(wb){
   const cTonsHrBruto = colIndexByHeader(header,'tons/hr bruto');
   const cTonsHrNeto = colIndexByHeader(header,'tons/hr neto');
   const cNumero = colIndexByHeader(header,'n°') > -1 ? colIndexByHeader(header,'n°') : colIndexByHeader(header,'nº');
-  const cArribo = colIndexByHeader(header,'arribo');
-  const cZarpe = colIndexByHeader(header,'zarpe');
+  const colFecha = (exactos, contiene) => {
+    for(const n of exactos){ const i = header.findIndex(v=>v!=null && String(v).trim().toLowerCase()===n); if(i>-1) return i; }
+    for(const n of contiene){ const i = colIndexByHeader(header,n); if(i>-1) return i; }
+    return -1;
+  };
+  const cArribo = colFecha(['arribo','fecha arribo','fecha de arribo','atraque','fecha atraque'], ['arribo','atraque','eta']);
+  const cZarpe = colFecha(['zarpe','fecha zarpe','fecha de zarpe','desatraque','fecha desatraque'], ['zarpe','desatraque','etd']);
 
   const filasVistas = new Set();
   const recaladas = [];
@@ -3456,9 +3492,26 @@ function parseRecaladas(wb){
     const arriboRaw = cArribo>-1 ? row[cArribo] : null;
     const zarpeRaw = cZarpe>-1 ? row[cZarpe] : null;
     const aFechaISO = v => {
-      const esFecha = v!=null && Object.prototype.toString.call(v) === '[object Date]';
-      if(!esFecha || isNaN(v.getTime())) return null;
-      return v.toISOString();
+      if(v==null || v==='') return null;
+      let d = null;
+      if(Object.prototype.toString.call(v) === '[object Date]'){
+        d = isNaN(v.getTime()) ? null : new Date(Math.round(v.getTime()/60000)*60000); // redondeo al minuto (SheetJS a veces resta segundos)
+      } else if(typeof v === 'number' && v>20000 && v<80000){
+        const ms = Math.round((v - 25569) * 86400000 / 60000) * 60000; // serie Excel -> fecha
+        const u = new Date(ms);
+        d = new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate(), u.getUTCHours(), u.getUTCMinutes());
+      } else {
+        const t = String(v).trim();
+        let m = t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})(?:[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+        if(m){
+          let y = +m[3]; if(y<100) y += 2000;
+          d = new Date(y, +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0)); // día primero (formato chileno)
+        } else if((m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T]+(\d{1,2}):(\d{2}))?/))){
+          d = new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0));
+        }
+      }
+      if(!d || isNaN(d.getTime())) return null;
+      return d.toISOString();
     };
     recaladas.push({
       anio: Number(y),
