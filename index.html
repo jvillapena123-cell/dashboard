@@ -2694,7 +2694,7 @@ function renderSobretiempoTodos(d){
     `<th>Persona</th><th>Cargo</th>${mesesCols.map(m=>`<th>${m}</th>`).join('')}<th>Total</th>`;
   const tbody = document.querySelector('#tablaSobretiempoPersona tbody');
   tbody.innerHTML = personasOrdenadas.map(p=>{
-    const valores = [p.jun,p.jul,p.ago,p.sep].map(v=> v==null ? '—' : fmt1(v));
+    const valores = d.porMes.map(m=>valorPersonaMes(p, m.mes)).map(v=> v==null ? '—' : fmt1(v));
     return `<tr><td>${p.persona}</td><td style="text-align:left;">${p.cargo}</td>${valores.map(v=>`<td>${v}</td>`).join('')}<td style="font-weight:800;">${fmt1(p.total)}</td></tr>`;
   }).join('');
 
@@ -2847,9 +2847,8 @@ function renderSobretiempoMes(d, mes){
   }).join('');
 
   // --- Gráfico: Sobretiempo por persona (mes) ---
-  const claveMes = {Junio:'jun',Julio:'jul',Agosto:'ago',Septiembre:'sep'}[mes];
   const personasDelMes = d.porPersona
-    .map(p=>({persona:p.persona, valor:p[claveMes]}))
+    .map(p=>({persona:p.persona, valor:valorPersonaMes(p, mes)}))
     .filter(p=>p.valor!=null)
     .sort((a,b)=>b.valor-a.valor);
   singleBar('chartSTMPersona', personasDelMes.map(p=>p.persona), personasDelMes.map(p=>p.valor), NARANJA, fmt1);
@@ -3007,9 +3006,8 @@ function parseSobretiempo(wb){
   const sn = wb.SheetNames.find(n=>n.toLowerCase().includes('resumen')) || wb.SheetNames[0];
   const matrix = sheetToMatrix(wb.Sheets[sn]);
   const hr1 = findHeaderRow(matrix, ['mes','sobretiempo']);
-  if(hr1===-1) throw new Error('No se encontró la tabla "Sobretiempo por mes" en la hoja Resumen.');
   const porMes = [];
-  for(let r=hr1+1; r<matrix.length; r++){
+  for(let r=(hr1===-1 ? matrix.length : hr1+1); r<matrix.length; r++){
     const row = matrix[r];
     const mes = row[1];
     if(mes==null || String(mes).trim()==='') break;
@@ -3081,20 +3079,66 @@ function parseSobretiempo(wb){
     return dow===0 || dow===6;
   }
 
+  // --- Lectura robusta de una celda del calendario ---
+  // Acepta números, texto con coma decimal ("7,5"), texto con unidades ("7,5 h", "7.5 HE"),
+  // y los códigos D / C / L / L D. Lo que no se pueda interpretar se cuenta como "ilegible".
+  const ilegibles = [];
+  function normalizarCelda(v, mes, persona, dia){
+    if(v==null || v==='') return v===undefined ? null : v;
+    if(typeof v === 'number') return isFinite(v) ? v : null;
+    if(Object.prototype.toString.call(v) === '[object Date]'){
+      // Excel a veces formatea "7:30" como hora → se convierte a horas decimales
+      const h = v.getHours() + v.getMinutes()/60;
+      return Math.round(h*100)/100;
+    }
+    const t = String(v).trim().toUpperCase();
+    if(t==='') return null;
+    if(t==='D' || t==='C') return t;
+    if(t==='L' || t==='L D' || t==='LD' || t==='L/D') return 'L D';
+    const hm = t.match(/^(\d{1,2}):(\d{2})/); // "7:30"
+    if(hm) return Math.round((+hm[1] + +hm[2]/60)*100)/100;
+    const m = t.match(/-?\d+(?:[.,]\d+)?/);
+    if(m){
+      const n = Number(m[0].replace(',','.'));
+      if(isFinite(n)) return n;
+    }
+    ilegibles.push(`${mes} · ${persona} · día ${dia}: "${String(v).trim()}"`);
+    return null;
+  }
+  function normalizarNombreMes(v){
+    if(v==null) return null;
+    if(Object.prototype.toString.call(v) === '[object Date]') return MESES_ORDEN[v.getMonth()];
+    if(typeof v === 'number' && v>=1 && v<=12) return MESES_ORDEN[v-1];
+    const n = normalizarMes(v);
+    return n && MES_A_INDICE[n]!=null ? n : String(v).trim();
+  }
+
   const datos = {};
   const snDatos = wb.SheetNames.find(n=>n.toLowerCase().includes('datos'));
   if(snDatos){
     const matrixD = sheetToMatrix(wb.Sheets[snDatos]);
     const hrD = findHeaderRow(matrixD, ['mes','persona','cargo']);
     if(hrD>-1){
+      const hdr = matrixD[hrD];
+      const cMes = Math.max(0, hdr.findIndex(c=>c!=null && String(c).trim().toLowerCase()==='mes'));
+      const cPersona = colIndexByHeader(hdr,'persona');
+      const cCargo = colIndexByHeader(hdr,'cargo');
+      // columna del día 1: primera celda del encabezado que sea 1 / "1" a la derecha de Cargo
+      let cDia1 = -1;
+      for(let c=cCargo+1; c<hdr.length; c++){ if(hdr[c]!=null && String(hdr[c]).trim()==='1'){ cDia1 = c; break; } }
+      if(cDia1===-1) cDia1 = cCargo+1;
+      let mesActual = null; // por si el mes viene en celda combinada (solo la 1ª fila del bloque)
       for(let r=hrD+1; r<matrixD.length; r++){
         const row = matrixD[r];
-        const mes = row[0], persona = row[2], cargo = row[3];
-        if(mes==null || persona==null || String(persona).trim()==='') continue;
+        if(row[cMes]!=null && String(row[cMes]).trim()!=='') mesActual = normalizarNombreMes(row[cMes]);
+        const persona = row[cPersona], cargo = row[cCargo];
+        if(!mesActual || persona==null || String(persona).trim()==='') continue;
+        if(String(persona).toUpperCase().includes('TOTAL')) continue;
+        const nombre = String(persona).trim();
         const dias = [];
-        for(let c=4; c<35; c++) dias.push(row[c]===undefined ? null : row[c]);
-        if(!datos[mes]) datos[mes] = [];
-        datos[mes].push({persona: String(persona).trim(), cargo: cargo||'', dias});
+        for(let k=0; k<31; k++) dias.push(normalizarCelda(row[cDia1+k], mesActual, nombre, k+1));
+        if(!datos[mesActual]) datos[mesActual] = [];
+        datos[mesActual].push({persona: nombre, cargo: cargo||'', dias});
       }
     }
   }
@@ -3121,16 +3165,76 @@ function parseSobretiempo(wb){
     diario[mes] = {porDia, finSemFer, feriado};
   });
 
+  // --- Resúmenes recalculados desde la hoja Datos (lo que se ve en el calendario manda) ---
+  // Así KPIs, gráficos y calendario siempre cuadran con el archivo cargado, incluidos meses
+  // nuevos (Octubre, Noviembre…) aunque la hoja Resumen no los tenga o tenga fórmulas sin calcular.
+  const mesesDatos = MESES_ORDEN.filter(m=>datos[m]);
+  const porMesCalc = [], porTipoDiaCalc = [];
+  const personasMap = {};
+  mesesDatos.forEach(mes=>{
+    const filas = datos[mes];
+    const dDia = diario[mes];
+    let horas=0, habiles=0, finSemana=0, fer=0;
+    const totPersona = filas.map(p=>{
+      let t=0;
+      p.dias.forEach((v,i)=>{
+        if(typeof v !== 'number' || v<=0) return;
+        t += v;
+        if(dDia.feriado[i]) fer += v; else if(dDia.finSemFer[i]) finSemana += v; else habiles += v;
+      });
+      return {p, t: Math.round(t*100)/100};
+    });
+    horas = totPersona.reduce((a,x)=>a+x.t,0);
+    const jefes = totPersona.filter(x=>/jefe/i.test(x.p.cargo));
+    const oper = totPersona.filter(x=>!/jefe/i.test(x.p.cargo));
+    const prev = porMes.find(m=>normalizarMes(m.mes)===mes);
+    porMesCalc.push({
+      mes, horas: Math.round(horas*100)/100,
+      personas: filas.length,
+      conST: totPersona.filter(x=>x.t>0).length,
+      promedio: filas.length ? horas/filas.length : 0,
+      pctFinSemana: horas ? (finSemana+fer)/horas : 0,
+      jefesTurno: jefes.length ? jefes.reduce((a,x)=>a+x.t,0)/jefes.length : 0,
+      operadores: oper.length ? oper.reduce((a,x)=>a+x.t,0)/oper.length : 0,
+      difPlanilla: prev && isFinite(prev.horas) ? Math.round(Math.abs(prev.horas - horas)*100)/100 : 0
+    });
+    porTipoDiaCalc.push({mes, habiles, finSemana, feriado:fer, total:habiles+finSemana+fer});
+    totPersona.forEach(({p,t})=>{
+      if(!personasMap[p.persona]) personasMap[p.persona] = {persona:p.persona, cargo:p.cargo, meses:{}, total:0};
+      personasMap[p.persona].meses[mes] = t;
+      personasMap[p.persona].total = Math.round((personasMap[p.persona].total + t)*100)/100;
+    });
+  });
+  const porPersonaCalc = Object.values(personasMap);
+
+  const usarDatos = porMesCalc.length>0;
+  const estadoPrev = DATA.sobretiempo.estadoPorMes || {};
+  const estadoPorMes = {};
+  (usarDatos ? porMesCalc : porMes).forEach((m,i,arr)=>{
+    if(m.horas===0) estadoPorMes[m.mes] = 'Sin registros';
+    else if(i===arr.length-1) estadoPorMes[m.mes] = 'En curso / último cargado';
+    else estadoPorMes[m.mes] = estadoPrev[m.mes] && !/curso/i.test(estadoPrev[m.mes]) ? estadoPrev[m.mes] : 'Cerrado';
+  });
+
   return {
-    porMes: porMes.length ? porMes : DATA.sobretiempo.porMes,
-    porPersona: porPersona.length ? porPersona : DATA.sobretiempo.porPersona,
-    porTipoDia: porTipoDia.length ? porTipoDia : DATA.sobretiempo.porTipoDia,
-    totalHoras: totalHoras || DATA.sobretiempo.totalHoras,
+    porMes: usarDatos ? porMesCalc : (porMes.length ? porMes : DATA.sobretiempo.porMes),
+    porPersona: usarDatos ? porPersonaCalc : (porPersona.length ? porPersona : DATA.sobretiempo.porPersona),
+    porTipoDia: usarDatos ? porTipoDiaCalc : (porTipoDia.length ? porTipoDia : DATA.sobretiempo.porTipoDia),
+    totalHoras: usarDatos ? Math.round(porMesCalc.reduce((a,m)=>a+m.horas,0)*100)/100 : (totalHoras || DATA.sobretiempo.totalHoras),
     metaHorasMensuales: DATA.sobretiempo.metaHorasMensuales || 168,
-    estadoPorMes: DATA.sobretiempo.estadoPorMes || {},
+    estadoPorMes,
     datos: Object.keys(datos).length ? datos : DATA.sobretiempo.datos,
-    diario: Object.keys(diario).length ? diario : DATA.sobretiempo.diario
+    diario: Object.keys(diario).length ? diario : DATA.sobretiempo.diario,
+    _ilegibles: ilegibles,
+    _hojaDatos: !!snDatos
   };
+}
+
+/* Horas de una persona en un mes: soporta el formato nuevo (meses:{Octubre:..}) y el antiguo (jun/jul/ago/sep) */
+function valorPersonaMes(p, mes){
+  if(p.meses && Object.prototype.hasOwnProperty.call(p.meses, mes)) return p.meses[mes];
+  const k = {Junio:'jun',Julio:'jul',Agosto:'ago',Septiembre:'sep'}[mes];
+  return k && p[k]!==undefined ? p[k] : null;
 }
 
 function renderExplorador(){
@@ -4139,6 +4243,12 @@ function actualizarBotonVerCompleto(){
 document.getElementById('btnVerSobretiempoCompleto').addEventListener('click', () => {
   sobretiempoDetalleExpandido = !sobretiempoDetalleExpandido;
   actualizarBotonVerCompleto();
+  if(sobretiempoDetalleExpandido){
+    setTimeout(()=>{
+      ['chartSTMPersona','chartSTMVsMeta','chartSTMPorDia','chartSTMPie','chartSTMPorNave']
+        .forEach(id=>{ if(charts[id]){ charts[id].resize(); charts[id].update('none'); } });
+    }, 30);
+  }
 });
 
 document.getElementById('btnOpenSobretiempo').addEventListener('click', () => {
@@ -4180,7 +4290,16 @@ document.getElementById('fileSobretiempo').addEventListener('change', async e =>
     renderSobretiempo();
     const hora = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     const mod = file.lastModified ? new Date(file.lastModified).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    estado.textContent = '✔ Cargado: '+file.name+' a las '+hora+(mod ? ' (archivo guardado el '+mod+')' : '');
+    const st = DATA.sobretiempo;
+    const resumenMeses = st.porMes.map(m=>`${m.mes}: ${fmt1(m.horas)} h`).join(' · ');
+    let msg = '✔ Cargado: '+file.name+' a las '+hora+(mod ? ' (archivo guardado el '+mod+')' : '')+' — '+resumenMeses;
+    if(st._hojaDatos===false) msg += ' ⚠ No se encontró la hoja "Datos" (calendario día a día).';
+    if(st._ilegibles && st._ilegibles.length){
+      msg += ` ⚠ ${st._ilegibles.length} celda(s) no se pudieron leer como horas y se ignoraron (ver consola o el aviso).`;
+      console.warn('Celdas de sobretiempo no leídas:', st._ilegibles);
+      alert('Estas celdas del Excel no se pudieron leer como horas (se ignoraron):\n\n' + st._ilegibles.slice(0,25).join('\n') + (st._ilegibles.length>25 ? '\n… y '+(st._ilegibles.length-25)+' más' : ''));
+    }
+    estado.textContent = msg;
   }catch(err){
     console.error(err);
     estado.textContent = 'Error: '+err.message;
