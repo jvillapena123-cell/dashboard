@@ -1152,24 +1152,24 @@
 
     <div class="movilizado-header" style="margin-top:26px;">
       <h3>Número de Naves — 2026</h3>
-      <p>Naves distintas (recaladas únicas) que operaron durante el año, por mes y por producto</p>
+      <p>Viajes (recaladas) atendidos durante el año, por mes y por producto — cada recalada cuenta, aunque se repita el nombre de la nave</p>
     </div>
     <div class="kpi-alert-row">
       <div class="kpi-alert info">
         <div class="kpi-alert-valor" id="valorNavesAcumulado">—</div>
-        <div class="kpi-alert-etiqueta">Naves Distintas Acumuladas (2026)</div>
+        <div class="kpi-alert-etiqueta">Naves (viajes) Acumuladas 2026</div>
       </div>
     </div>
     <div class="chart-grid dos-col">
       <div class="chart-box tall"><div class="chart-title">Número de naves por mes (2026)</div><canvas id="chartNavesPorMes"></canvas></div>
-      <div class="chart-box tall"><div class="chart-title">Número de naves por producto</div><canvas id="chartNavesPorProducto"></canvas></div>
+      <div class="chart-box tall"><div class="chart-title">Número de naves por producto (2026)</div><canvas id="chartNavesPorProducto"></canvas></div>
     </div>
 
     <div class="nota-pie">
       Total transferido = Toneladas embarcadas + Tonelaje descargado, sumadas para todas las naves y productos del terminal
-      (no solo Aceros Arequipa). Var. % solo se calcula en meses con datos en ambos años. Número de naves = nombres distintos
-      registrados en la columna "Nave" (recaladas separadas de una misma nave, ej. "KARVUNA" y "KARVUNA 2", cuentan por separado
-      si así vienen en la fuente). Fuente: Estadística Operacional de Naves.
+      (no solo Aceros Arequipa). Var. % solo se calcula en meses con datos en ambos años. Número de naves = cantidad de viajes
+      (recaladas) registrados: si una nave aparece 3 veces en el año, cuenta 3. Una recalada con varios productos (mismo N°) cuenta
+      una vez en el total. Fuente: Estadística Operacional de Naves.
     </div>
   </section>
 
@@ -2346,7 +2346,7 @@ function renderTonelaje(){
   }
 
   /* --- Número de naves — 2026 (por mes y por producto) --- */
-  const nStats = DATA.navesStats;
+  const nStats = contarViajesNaves(2026) || DATA.navesStats;
   if(nStats){
     document.getElementById('valorNavesAcumulado').textContent = fmtInt(nStats.totalAcumulado2026);
 
@@ -2355,6 +2355,28 @@ function renderTonelaje(){
     const porProdOrdenado = nStats.porProducto.slice().sort((a,b)=>b.cantidad-a.cantidad);
     singleBar('chartNavesPorProducto', porProdOrdenado.map(p=>p.producto), porProdOrdenado.map(p=>p.cantidad), NARANJA, fmtInt);
   }
+}
+
+/* Cuenta VIAJES (recaladas), no nombres distintos: si KARVUNA aparece 3 veces, son 3 viajes.
+   Una misma recalada con varios productos (mismo N°) cuenta como 1 viaje en el total y por mes,
+   y como 1 en cada producto que movilizó. */
+function contarViajesNaves(anio){
+  const filas = (DATA.recaladas||[]).filter(r => Number(r.anio)===Number(anio) && r.nave);
+  if(!filas.length) return null;
+  const claveViaje = (r,i) => r.numero ? `N${r.numero}|${r.anio}|${r.mes}|${String(r.nave).trim().toUpperCase()}` : `F${i}`;
+  const viajes = new Set(), porMes = {}, porProd = {};
+  filas.forEach((r,i)=>{
+    const k = claveViaje(r,i);
+    viajes.add(k);
+    if(r.mes){ (porMes[r.mes] = porMes[r.mes] || new Set()).add(k); }
+    const prod = r.producto || 'Sin Producto';
+    (porProd[prod] = porProd[prod] || new Set()).add(k);
+  });
+  return {
+    porMes2026: MESES_ORDEN.filter(m=>porMes[m]).map(m=>({mes:m, cantidad:porMes[m].size})),
+    porProducto: Object.entries(porProd).map(([producto,set])=>({producto, cantidad:set.size})),
+    totalAcumulado2026: viajes.size
+  };
 }
 
 /* =====================================================================
@@ -3713,6 +3735,7 @@ function parseRecaladas(wb){
       return d.toISOString();
     };
     recaladas.push({
+      numero: cNumero>-1 && row[cNumero]!=null && row[cNumero]!=='' ? String(row[cNumero]).trim() : null,
       anio: Number(y),
       mes: mes || null,
       nave: String(nave).trim(),
