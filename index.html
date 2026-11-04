@@ -3412,23 +3412,76 @@ function sheetToMatrix(ws){
   return XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null, range});
 }
 
+// Texto normalizado: minúsculas, sin tildes, sin espacios alrededor de "/", espacios simples
+function normTxt(s){
+  return String(s==null ? '' : s)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().replace(/\s*\/\s*/g,'/').replace(/\s+/g,' ').trim();
+}
+// Número robusto: acepta 5,5 · "$ 7,9" · "US$ 6" · "1.234,5" (texto) además de números reales
+function toNum(v){
+  if(v==null || v==='') return NaN;
+  if(typeof v === 'number') return v;
+  let t = String(v).replace(/us\$|usd|\$|\s/gi,'');
+  if(t.includes(',') && t.includes('.')) t = t.replace(/\./g,'').replace(',','.');
+  else if(t.includes(',')) t = t.replace(',','.');
+  else if(/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g,''); // "3.100" = miles (formato chileno)
+  const n = Number(t);
+  return isFinite(n) ? n : NaN;
+}
+
 function findHeaderRow(matrix, mustContain){
   // mustContain: array of lowercase substrings that must all appear somewhere in the row
   for(let r=0; r<matrix.length; r++){
-    const row = matrix[r].map(c => (c==null? '' : String(c).toLowerCase()));
+    const row = (matrix[r]||[]).map(c => (c==null? '' : String(c).toLowerCase()));
     const joined = row.join(' | ');
     if(mustContain.every(k => joined.includes(k))) return r;
+  }
+  // respaldo: misma búsqueda ignorando tildes y espacios
+  const needles = mustContain.map(normTxt);
+  for(let r=0; r<matrix.length; r++){
+    const joined = (matrix[r]||[]).map(normTxt).join(' | ');
+    if(needles.every(k => joined.includes(k))) return r;
   }
   return -1;
 }
 
+// needle: texto o lista de alternativas (se prueba en orden). Primero coincidencia exacta como antes,
+// luego respaldo ignorando tildes/espacios (ej. "USD / Ton Programado").
 function colIndexByHeader(headerRow, needle){
-  for(let c=0;c<headerRow.length;c++){
-    const v = headerRow[c];
-    if(v!=null && String(v).toLowerCase().includes(needle)) return c;
+  const list = Array.isArray(needle) ? needle : [needle];
+  for(const nd of list){
+    for(let c=0;c<headerRow.length;c++){
+      const v = headerRow[c];
+      if(v!=null && String(v).toLowerCase().includes(nd)) return c;
+    }
+  }
+  for(const nd of list){
+    const k = normTxt(nd);
+    for(let c=0;c<headerRow.length;c++){
+      const v = headerRow[c];
+      if(v!=null && normTxt(v).includes(k)) return c;
+    }
   }
   return -1;
 }
+
+// Elige la hoja con la tabla de estadística operacional que tenga MÁS filas de datos
+// (evita tomar una hoja resumen o una tabla dinámica que también diga "Producto" y "Rate").
+function buscarHojaEstadistica(wb){
+  let found = null;
+  for(const sn of wb.SheetNames){
+    const m = sheetToMatrix(wb.Sheets[sn]);
+    const hr = findHeaderRow(m, ['producto','rate']);
+    if(hr===-1) continue;
+    const filas = m.slice(hr+1).filter(r => r && r.some(c => c!=null && c!=='')).length;
+    if(!found || filas > found.filas) found = {matrix:m, hr, filas, hoja:sn};
+  }
+  return found;
+}
+
+const COLS_USD_PROG = ['usd/ton programado','usd/ton prog','us$/ton programado','costo programado','costo prog'];
+const COLS_USD_LOG  = ['usd/ton logrado','usd/ton real','us$/ton logrado','costo logrado','costo real'];
 
 /* ---------- Parser 1: Turnos CPPT ---------- */
 function parseCppt(wb){
@@ -3584,12 +3637,7 @@ function normalizarMes(raw){
 
 /* ---------- Parser 4b: Recaladas crudas (para el Explorador Interactivo) ---------- */
 function parseRecaladas(wb){
-  let found = null;
-  for(const sn of wb.SheetNames){
-    const m = sheetToMatrix(wb.Sheets[sn]);
-    const hr = findHeaderRow(m, ['producto','rate']);
-    if(hr>-1){ found = {matrix:m, hr}; break; }
-  }
+  const found = buscarHojaEstadistica(wb);
   if(!found) throw new Error('No se encontró la tabla de estadística operacional (columnas "Producto" y "Rate").');
   const {matrix, hr} = found;
   const header = matrix[hr];
@@ -3604,8 +3652,8 @@ function parseRecaladas(wb){
   const cRateAlcanzado = colIndexByHeader(header,'rate alcanzado');
   let cRateOp = colIndexByHeader(header,'rate operacional');
   if(cRateOp===-1) cRateOp = colIndexByHeader(header,'rate comercial');
-  const cUsdProg = colIndexByHeader(header,'usd/ton programado');
-  const cUsdLog = colIndexByHeader(header,'usd/ton logrado');
+  const cUsdProg = colIndexByHeader(header,COLS_USD_PROG);
+  const cUsdLog = colIndexByHeader(header,COLS_USD_LOG);
   const cTonsHrBruto = colIndexByHeader(header,'tons/hr bruto');
   const cTonsHrNeto = colIndexByHeader(header,'tons/hr neto');
   const cNumero = colIndexByHeader(header,'n°') > -1 ? colIndexByHeader(header,'n°') : colIndexByHeader(header,'nº');
@@ -3630,16 +3678,16 @@ function parseRecaladas(wb){
     if(filasVistas.has(huella)) continue;
     filasVistas.add(huella);
     if(y==null || !nave) continue;
-    const emb = Number(row[cEmbarcadas]) || 0;
-    const desc = Number(row[cDescargado]) || 0;
-    const rateCon = Number(row[cRateCon]);
-    const rateAlcanzadoRaw = Number(row[cRateAlcanzado]);
-    const rateOpRaw = Number(row[cRateOp]);
+    const emb = toNum(row[cEmbarcadas]) || 0;
+    const desc = toNum(row[cDescargado]) || 0;
+    const rateCon = toNum(row[cRateCon]);
+    const rateAlcanzadoRaw = toNum(row[cRateAlcanzado]);
+    const rateOpRaw = toNum(row[cRateOp]);
     const rateOp = isFinite(rateAlcanzadoRaw) && rateAlcanzadoRaw>0 ? rateAlcanzadoRaw : rateOpRaw;
-    const usdProg = Number(row[cUsdProg]);
-    const usdLog = Number(row[cUsdLog]);
-    const tonsHrBruto = Number(row[cTonsHrBruto]);
-    const tonsHrNeto = Number(row[cTonsHrNeto]);
+    const usdProg = toNum(row[cUsdProg]);
+    const usdLog = toNum(row[cUsdLog]);
+    const tonsHrBruto = toNum(row[cTonsHrBruto]);
+    const tonsHrNeto = toNum(row[cTonsHrNeto]);
     const arriboRaw = cArribo>-1 ? row[cArribo] : null;
     const zarpeRaw = cZarpe>-1 ? row[cZarpe] : null;
     const aFechaISO = v => {
@@ -3681,16 +3729,12 @@ function parseRecaladas(wb){
       zarpe: aFechaISO(zarpeRaw)
     });
   }
+  recaladas.hoja = found.hoja;
   return recaladas;
 }
 
 function parseRatePorProducto(wb, anio=2026){
-  let found = null;
-  for(const sn of wb.SheetNames){
-    const m = sheetToMatrix(wb.Sheets[sn]);
-    const hr = findHeaderRow(m, ['producto','rate']);
-    if(hr>-1){ found = {matrix:m, hr}; break; }
-  }
+  const found = buscarHojaEstadistica(wb);
   if(!found) throw new Error('No se encontró la tabla de estadística operacional (columnas "Producto" y "Rate").');
   const {matrix, hr} = found;
   const header = matrix[hr];
@@ -3706,8 +3750,8 @@ function parseRatePorProducto(wb, anio=2026){
   const cEmbarcadas = colIndexByHeader(header,'toneladas embarcadas');
   const cDescargado = colIndexByHeader(header,'tonelaje descargado');
   const cCliente = colIndexByHeader(header,'cliente');
-  const cUsdProg = colIndexByHeader(header,'usd/ton programado');
-  const cUsdLog = colIndexByHeader(header,'usd/ton logrado');
+  const cUsdProg = colIndexByHeader(header,COLS_USD_PROG);
+  const cUsdLog = colIndexByHeader(header,COLS_USD_LOG);
   const cTonsHr = colIndexByHeader(header,'tons/hr bruto');
   const cTonsHrNeto = colIndexByHeader(header,'tons/hr neto');
   const cNumero = colIndexByHeader(header,'n°') > -1 ? colIndexByHeader(header,'n°') : colIndexByHeader(header,'nº');
@@ -3729,10 +3773,10 @@ function parseRatePorProducto(wb, anio=2026){
     const nave = row[cNave];
     const prod = row[cProducto];
     const mes = normalizarMes(row[cMes]);
-    const rateAlcanzadoRaw = Number(row[cRateAlcanzado]);
-    const rateOpRaw = Number(row[cRateOp]);
+    const rateAlcanzadoRaw = toNum(row[cRateAlcanzado]);
+    const rateOpRaw = toNum(row[cRateOp]);
     const rateOp = isFinite(rateAlcanzadoRaw) && rateAlcanzadoRaw>0 ? rateAlcanzadoRaw : rateOpRaw;
-    const rateCon = Number(row[cRateCon]);
+    const rateCon = toNum(row[cRateCon]);
 
     // Detección de filas duplicadas (misma N°/Año/Mes/Nave/Producto ya procesada)
     if(y!=null || nave!=null){
@@ -3961,6 +4005,8 @@ function setupDropzone(zoneId, inputId, estadoId, onFile){
       console.error(err);
       estado.textContent = 'Error: '+err.message;
       estado.className = 'estado err';
+    }finally{
+      input.value = ''; // permite volver a cargar el MISMO archivo (sin esto el navegador no dispara "change")
     }
   }
 
@@ -4166,7 +4212,12 @@ setupDropzone('dz-rate','file-rate','estado-rate', wb => {
   guardarEnStorage('navesStats', DATA.navesStats);
   guardarEnStorage('recaladas', DATA.recaladas);
   inicializarFiltros();
-  return resultado.filasDuplicadas>0 ? `⚠ se detectaron y descartaron ${resultado.filasDuplicadas} fila(s) duplicada(s)` : null;
+  const hoja = DATA.recaladas.hoja;
+  const conCosto = DATA.recaladas.filter(r=>r.usdProgramado!=null || r.usdLogrado!=null).length;
+  const partes = [`hoja "${hoja}" · ${DATA.recaladas.length} recaladas · ${conCosto} con costo USD/Ton`];
+  if(!conCosto) partes.push('⚠ no se encontraron valores USD/Ton (revisa los encabezados de costo)');
+  if(resultado.filasDuplicadas>0) partes.push(`⚠ ${resultado.filasDuplicadas} fila(s) duplicada(s) descartada(s)`);
+  return partes.join(' · ');
 });
 setupDropzone('dz-seguridad','file-seguridad','estado-seguridad', wb => { DATA.seguridad = parseSeguridad(wb); guardarEnStorage('seguridad', DATA.seguridad); });
 setupDropzone('dz-ocupacion','file-ocupacion','estado-ocupacion', wb => { DATA.ocupacion = parseOcupacion(wb); guardarEnStorage('ocupacion', DATA.ocupacion); });
