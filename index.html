@@ -1729,22 +1729,23 @@ let DATA = {
   },
   navesStats: {
     porMes2026: [
-      {mes:'Enero', cantidad:7}, {mes:'Febrero', cantidad:9}, {mes:'Marzo', cantidad:5},
-      {mes:'Abril', cantidad:5}, {mes:'Mayo', cantidad:12}, {mes:'Junio', cantidad:5},
-      {mes:'Julio', cantidad:7}, {mes:'Agosto', cantidad:4}, {mes:'Septiembre', cantidad:7}
+      {mes:'Enero', cantidad:9}, {mes:'Febrero', cantidad:20}, {mes:'Marzo', cantidad:5},
+      {mes:'Abril', cantidad:9}, {mes:'Mayo', cantidad:12}, {mes:'Junio', cantidad:5},
+      {mes:'Julio', cantidad:8}, {mes:'Agosto', cantidad:5}, {mes:'Septiembre', cantidad:8},
+      {mes:'Octubre', cantidad:5}, {mes:'Noviembre', cantidad:1}
     ],
     porProducto: [
-      {producto:'Carga General / Proyecto', cantidad:22},
-      {producto:'Soda Cáustica', cantidad:25},
-      {producto:'Caliza', cantidad:13},
-      {producto:'Productos de Acero', cantidad:10},
-      {producto:'Carbón y Coque', cantidad:5},
-      {producto:'Pet Coke', cantidad:3},
-      {producto:'Granza / Finos', cantidad:3},
-      {producto:'Chatarra', cantidad:2},
-      {producto:'Sin Producto', cantidad:2}
+      {producto:'Carga General / Proyecto', cantidad:36},
+      {producto:'Soda Cáustica', cantidad:21},
+      {producto:'Productos de Acero', cantidad:12},
+      {producto:'Caliza', cantidad:11},
+      {producto:'Sin Producto', cantidad:2},
+      {producto:'Pet Coke', cantidad:2},
+      {producto:'Granza / Finos', cantidad:2},
+      {producto:'Chatarra', cantidad:1}
     ],
-    totalAcumulado2026: 50
+    totalAcumulado2026: 87,
+    criterio: 'filas'
   },
   ocupacion: {
     anual: [
@@ -3393,6 +3394,8 @@ function restaurarDesdeStorage(){
   const camposSinEstadoPropio = ['tonelaje','acerosAB','karvunaRates','navesStats','recaladas','sobretiempo']; // se restauran sin ventana de estado propia
   [...Object.keys(camposConEstado), ...camposSinEstadoPropio].forEach(campo=>{
     const guardado = cargarDeStorage(campo);
+    // navesStats guardado con el criterio antiguo (nombres distintos) se descarta: ahora se cuenta cada fila
+    if(campo==='navesStats' && guardado && guardado.criterio!=='filas') return;
     if(guardado!=null) DATA[campo] = guardado;
   });
   Object.entries(camposConEstado).forEach(([campo, estadoId])=>{
@@ -3959,7 +3962,8 @@ function buildNavesStats(navesPorMesAnio, navesPorProducto, navesTotalAnio){
   return {
     porMes2026: porMes2026.length ? porMes2026 : DATA.navesStats.porMes2026,
     porProducto: porProducto.length ? porProducto : DATA.navesStats.porProducto,
-    totalAcumulado2026: navesTotalAnio || DATA.navesStats.totalAcumulado2026
+    totalAcumulado2026: navesTotalAnio || DATA.navesStats.totalAcumulado2026,
+    criterio: 'filas'
   };
 }
 
