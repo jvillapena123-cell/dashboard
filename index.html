@@ -1159,12 +1159,12 @@
 
     <div class="movilizado-header" style="margin-top:26px;">
       <h3>Número de Naves — 2026</h3>
-      <p>Naves distintas (recaladas únicas) que operaron durante el año, por mes y por producto</p>
+      <p>Total de naves atendidas durante el año, por mes y por producto — cada recalada cuenta, aunque la nave se repita</p>
     </div>
     <div class="kpi-alert-row">
       <div class="kpi-alert info">
         <div class="kpi-alert-valor" id="valorNavesAcumulado">—</div>
-        <div class="kpi-alert-etiqueta">Naves Distintas Acumuladas (2026)</div>
+        <div class="kpi-alert-etiqueta">Naves Acumuladas 2026 (total de recaladas)</div>
       </div>
     </div>
     <div class="chart-grid dos-col">
@@ -1174,9 +1174,8 @@
 
     <div class="nota-pie">
       Total transferido = Toneladas embarcadas + Tonelaje descargado, sumadas para todas las naves y productos del terminal
-      (no solo Aceros Arequipa). Var. % solo se calcula en meses con datos en ambos años. Número de naves = nombres distintos
-      registrados en la columna "Nave" (recaladas separadas de una misma nave, ej. "KARVUNA" y "KARVUNA 2", cuentan por separado
-      si así vienen en la fuente). Fuente: Estadística Operacional de Naves.
+      (no solo Aceros Arequipa). Var. % solo se calcula en meses con datos en ambos años. Número de naves = total de filas
+      del año en la planilla (cada recalada cuenta, aunque el nombre de la nave se repita; equivale al "Recuento" de Excel). Fuente: Estadística Operacional de Naves.
     </div>
   </section>
 
@@ -3757,8 +3756,9 @@ function parseRatePorProducto(wb, anio=2026){
   const tonPorProducto = {}; // total transferido por categoría de producto, año solicitado
   const tonPorProductoMes = {}; // total transferido por categoría de producto y mes, año solicitado
   const tonMensualPorAnio = {}; // total transferido por año y mes (todos los años detectados)
-  const navesPorMesAnio = {}; // Set de naves por mes, del año solicitado
-  const navesPorProducto = {}; // Set de naves por categoría de producto (todos los años)
+  const navesPorMesAnio = {}; // Cantidad de naves (filas) por mes, del año solicitado
+  const navesPorProducto = {}; // Cantidad de naves (filas) por categoría de producto, año solicitado
+  let navesTotalAnio = 0; // Total de filas del año solicitado: cada fila cuenta, aunque la nave se repita
   const acerosABList = []; // recaladas del cliente "A&B"
   const filasVistas = new Set(); // huella única por fila, para descartar duplicados accidentales
   let filasDuplicadas = 0;
@@ -3772,6 +3772,14 @@ function parseRatePorProducto(wb, anio=2026){
     const rateOpRaw = Number(row[cRateOp]);
     const rateOp = isFinite(rateAlcanzadoRaw) && rateAlcanzadoRaw>0 ? rateAlcanzadoRaw : rateOpRaw;
     const rateCon = Number(row[cRateCon]);
+
+    // Número de naves: se cuenta CADA fila del año (igual que el Recuento de Excel), aunque la nave se repita
+    if(y!=null && String(y).trim()!=='' && Number(y)===Number(anio)){
+      navesTotalAnio++;
+      if(mes) navesPorMesAnio[mes] = (navesPorMesAnio[mes]||0) + 1;
+      const catNave = prod ? categorizarProducto(prod) : 'Sin Producto';
+      navesPorProducto[catNave] = (navesPorProducto[catNave]||0) + 1;
+    }
 
     // Detección de filas duplicadas (misma N°/Año/Mes/Nave/Producto ya procesada)
     if(y!=null || nave!=null){
@@ -3805,17 +3813,6 @@ function parseRatePorProducto(wb, anio=2026){
             tonPorProductoMes[mes][cat] = (tonPorProductoMes[mes][cat]||0) + tonRow;
           }
         }
-      }
-      // Naves distintas por mes (año solicitado) y por producto (todos los años), independiente del tonelaje
-      if(nave){
-        const naveNorm = String(nave).trim();
-        if(Number(y)===Number(anio) && mes){
-          if(!navesPorMesAnio[mes]) navesPorMesAnio[mes] = new Set();
-          navesPorMesAnio[mes].add(naveNorm);
-        }
-        const catNave = prod ? categorizarProducto(prod) : 'Sin Producto';
-        if(!navesPorProducto[catNave]) navesPorProducto[catNave] = new Set();
-        navesPorProducto[catNave].add(naveNorm);
       }
 
       // Cliente "A&B" (naves Aceros A&B) — se registra independiente del filtro de producto caliza/soda
@@ -3890,7 +3887,7 @@ function parseRatePorProducto(wb, anio=2026){
   return {
     caliza: toList(caliza), soda: toList(soda), karvuna, karvunaRates,
     tonelaje: buildTonelaje(tonAnual, tonMensual, anio, tonPorProducto, tonPorProductoMes, tonMensualPorAnio),
-    navesStats: buildNavesStats(navesPorMesAnio, navesPorProducto),
+    navesStats: buildNavesStats(navesPorMesAnio, navesPorProducto, navesTotalAnio),
     acerosAB: buildAcerosAB(acerosABList), filasDuplicadas
   };
 }
@@ -3953,18 +3950,16 @@ function buildTonelaje(tonAnual, tonMensual, anioActual, tonPorProducto, tonPorP
   };
 }
 
-function buildNavesStats(navesPorMesAnio, navesPorProducto){
+function buildNavesStats(navesPorMesAnio, navesPorProducto, navesTotalAnio){
   const MESES_ORDEN3 = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const porMes2026 = MESES_ORDEN3
     .filter(m => navesPorMesAnio[m])
-    .map(m => ({mes:m, cantidad: navesPorMesAnio[m].size}));
-  const porProducto = Object.entries(navesPorProducto||{}).map(([producto,set])=>({producto, cantidad:set.size}));
-  const todasLasNaves = new Set();
-  Object.values(navesPorMesAnio||{}).forEach(set => set.forEach(n => todasLasNaves.add(n)));
+    .map(m => ({mes:m, cantidad: navesPorMesAnio[m]}));
+  const porProducto = Object.entries(navesPorProducto||{}).map(([producto,n])=>({producto, cantidad:n}));
   return {
     porMes2026: porMes2026.length ? porMes2026 : DATA.navesStats.porMes2026,
     porProducto: porProducto.length ? porProducto : DATA.navesStats.porProducto,
-    totalAcumulado2026: todasLasNaves.size || DATA.navesStats.totalAcumulado2026
+    totalAcumulado2026: navesTotalAnio || DATA.navesStats.totalAcumulado2026
   };
 }
 
