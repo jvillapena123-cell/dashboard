@@ -2579,7 +2579,10 @@ function actualizarFiltrosCascada(){
 function inicializarFiltros(){
   // Normaliza el producto de cada recalada por categoría, sin importar si viene de los datos por
   // defecto, de localStorage (posiblemente guardado antes de esta corrección), o de un archivo recién subido.
-  DATA.recaladas = DATA.recaladas.map(r => ({...r, producto: categorizarProducto(r.producto)}));
+  DATA.recaladas = DATA.recaladas.map(r => {
+    const cliente = normalizarCliente(r.cliente);
+    return {...r, cliente, producto: categoriaRecalada(cliente, r.producto)};
+  });
   const productos = [...new Set(DATA.recaladas.map(r=>r.producto))].sort();
   poblarSelect('filtroProducto', productos, 'Todos');
   actualizarFiltrosCascada();
@@ -3660,17 +3663,35 @@ function parseRecaladas(wb){
 
   const filasVistas = new Set();
   const recaladas = [];
+  const descartadas = [];
+  let ultimoAnio = null;
+  const fechaDeCelda = v => {
+    if(v==null || v==='') return null;
+    if(Object.prototype.toString.call(v)==='[object Date]') return isNaN(v.getTime()) ? null : v;
+    if(typeof v==='number' && v>20000 && v<80000){ const u = new Date(Math.round((v-25569)*86400000)); return new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate()); }
+    const m = String(v).trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+    if(m){ let yy=+m[3]; if(yy<100) yy+=2000; return new Date(yy, +m[2]-1, +m[1]); }
+    return null;
+  };
   for(let r=hr+1; r<matrix.length; r++){
     const row = matrix[r];
-    const y = row[cAnio];
-    const nave = row[cNave];
+    let y = row[cAnio];
+    if(y!=null && String(y).trim()==='') y = null;
+    if(y!=null && !isFinite(Number(y))){ const mY = String(y).match(/20\d{2}/); y = mY ? Number(mY[0]) : null; }
+    const naveRaw = row[cNave];
+    const nave = naveRaw!=null && String(naveRaw).trim()!=='' ? naveRaw : null;
     const prod = row[cProducto];
-    const mes = normalizarMes(row[cMes]);
+    let mes = normalizarMes(row[cMes]);
     if(y==null && !nave) continue;
+    // Año o mes vacío en una fila con nave: se toman de la fecha de arribo/zarpe (o del año de la fila anterior)
+    const fRef = fechaDeCelda(cArribo>-1?row[cArribo]:null) || fechaDeCelda(cZarpe>-1?row[cZarpe]:null);
+    if(y==null && nave) y = fRef ? fRef.getFullYear() : ultimoAnio;
+    if(!mes && nave && fRef) mes = MESES_ORDEN[fRef.getMonth()];
+    if(y!=null) ultimoAnio = Number(y);
     const huella = [cNumero>-1?row[cNumero]:'', y, mes, nave, prod].join('|');
     if(filasVistas.has(huella)) continue;
     filasVistas.add(huella);
-    if(y==null || !nave) continue;
+    if(y==null || !nave){ if(nave) descartadas.push(String(nave).trim()+' (sin año)'); continue; }
     const emb = Number(row[cEmbarcadas]) || 0;
     const desc = Number(row[cDescargado]) || 0;
     const rateCon = Number(row[cRateCon]);
@@ -3709,8 +3730,8 @@ function parseRecaladas(wb){
       anio: Number(y),
       mes: mes || null,
       nave: String(nave).trim(),
-      cliente: row[cCliente] ? String(row[cCliente]).trim() : 'Sin Cliente',
-      producto: prod ? categorizarProducto(prod) : 'Sin Producto',
+      cliente: normalizarCliente(row[cCliente]),
+      producto: categoriaRecalada(normalizarCliente(row[cCliente]), prod),
       tons: Math.round((emb+desc)*100)/100,
       rateContratado: isFinite(rateCon) && rateCon>0 ? rateCon : null,
       rateAlcanzado: isFinite(rateOp) && rateOp>0 && rateOp<=20000 ? rateOp : null,
@@ -3722,6 +3743,7 @@ function parseRecaladas(wb){
       zarpe: aFechaISO(zarpeRaw)
     });
   }
+  recaladas.descartadas = descartadas;
   return recaladas;
 }
 
@@ -3908,13 +3930,32 @@ function buildAcerosAB(list){
   };
 }
 
+/* Unifica escrituras distintas del mismo cliente ("Aceros Arequipa", "ACEROS  AREQUIPA ", "Corp. Aceros Arequipa"...) */
+function normalizarCliente(raw){
+  if(raw==null) return 'Sin Cliente';
+  const s = String(raw).replace(/\s+/g,' ').trim();
+  if(!s || s.toLowerCase()==='sin cliente') return 'Sin Cliente';
+  const u = s.toUpperCase();
+  if(u.includes('AREQUIPA')) return 'ACEROS AREQUIPA';
+  return u;
+}
+
+/* Las recaladas de Aceros Arequipa son siempre productos de acero, aunque el producto venga escrito distinto */
+function categoriaRecalada(cliente, producto){
+  const cat = categorizarProducto(producto);
+  if(cliente==='ACEROS AREQUIPA' && (cat==='Carga General / Proyecto' || cat==='Sin Producto')) return 'Productos de Acero';
+  return cat;
+}
+
 function categorizarProducto(raw){
   if(raw==null) return 'Sin Producto';
   const p = String(raw).trim().toLowerCase();
   if(p==='' || p==='sin producto') return 'Sin Producto';
   if(p.startsWith('caliza')) return 'Caliza';
   if(p.includes('soda')) return 'Soda Cáustica';
-  if(p.includes('acero') || p.includes('rollos') || p.includes('plate iron') || p.includes('barras')) return 'Productos de Acero';
+  if(p.includes('acero') || p.includes('rollos') || p.includes('plate iron') || p.includes('barras') ||
+     p.includes('alambr') || p.includes('palanquilla') || p.includes('perfil') || p.includes('fierro') ||
+     p.includes('corrugad') || p.includes('bobina') || p.includes('steel') || p.includes('wire rod') || p.includes('coil')) return 'Productos de Acero';
   if(p.includes('finos') || p.includes('granza')) return 'Granza / Finos';
   if(p.includes('chatarra')) return 'Chatarra';
   if(p.includes('pet coke') || p.includes('petcoke')) return 'Pet Coke';
@@ -4196,7 +4237,9 @@ setupDropzone('dz-rate','file-rate','estado-rate', wb => {
   DATA.acerosAB = resultado.acerosAB;
   DATA.karvunaRates = resultado.karvunaRates;
   DATA.navesStats = resultado.navesStats;
-  DATA.recaladas = parseRecaladas(wb);
+  const recNuevas = parseRecaladas(wb);
+  const descartadas = recNuevas.descartadas || [];
+  DATA.recaladas = recNuevas.slice();
   guardarEnStorage('rate', DATA.rate);
   guardarEnStorage('tonelaje', DATA.tonelaje);
   guardarEnStorage('acerosAB', DATA.acerosAB);
@@ -4204,7 +4247,10 @@ setupDropzone('dz-rate','file-rate','estado-rate', wb => {
   guardarEnStorage('navesStats', DATA.navesStats);
   guardarEnStorage('recaladas', DATA.recaladas);
   inicializarFiltros();
-  return resultado.filasDuplicadas>0 ? `⚠ se detectaron y descartaron ${resultado.filasDuplicadas} fila(s) duplicada(s)` : null;
+  const avisos = [];
+  if(resultado.filasDuplicadas>0) avisos.push(`se descartaron ${resultado.filasDuplicadas} fila(s) duplicada(s)`);
+  if(descartadas.length) avisos.push(`no se pudieron leer: ${descartadas.join(', ')}`);
+  return avisos.length ? '⚠ ' + avisos.join(' · ') : null;
 });
 setupDropzone('dz-seguridad','file-seguridad','estado-seguridad', wb => { DATA.seguridad = parseSeguridad(wb); guardarEnStorage('seguridad', DATA.seguridad); });
 setupDropzone('dz-ocupacion','file-ocupacion','estado-ocupacion', wb => { DATA.ocupacion = parseOcupacion(wb); guardarEnStorage('ocupacion', DATA.ocupacion); });
