@@ -3626,6 +3626,17 @@ function normalizarMes(raw){
   return match || s; // si no calza ni por prefijo, se deja el valor original (evita perder datos silenciosamente)
 }
 
+/* Lee números aunque vengan como texto con formato chileno: "3.537", "6.639,00", "US$ 5,50", "117,9%" */
+function numCL(v){
+  if(v==null || v==='') return NaN;
+  if(typeof v==='number') return v;
+  let t = String(v).replace(/US\$|\$|%|\s/gi,'');
+  if(!t) return NaN;
+  if(t.includes(',')) t = t.replace(/\./g,'').replace(',', '.');
+  else if(/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g,'');
+  return Number(t);
+}
+
 /* ---------- Parser 4b: Recaladas crudas (para el Explorador Interactivo) ---------- */
 function parseRecaladas(wb){
   let found = null;
@@ -3692,16 +3703,16 @@ function parseRecaladas(wb){
     if(filasVistas.has(huella)) continue;
     filasVistas.add(huella);
     if(y==null || !nave){ if(nave) descartadas.push(String(nave).trim()+' (sin año)'); continue; }
-    const emb = Number(row[cEmbarcadas]) || 0;
-    const desc = Number(row[cDescargado]) || 0;
-    const rateCon = Number(row[cRateCon]);
-    const rateAlcanzadoRaw = Number(row[cRateAlcanzado]);
-    const rateOpRaw = Number(row[cRateOp]);
+    const emb = numCL(row[cEmbarcadas]) || 0;
+    const desc = numCL(row[cDescargado]) || 0;
+    const rateCon = numCL(row[cRateCon]);
+    const rateAlcanzadoRaw = numCL(row[cRateAlcanzado]);
+    const rateOpRaw = numCL(row[cRateOp]);
     const rateOp = isFinite(rateAlcanzadoRaw) && rateAlcanzadoRaw>0 ? rateAlcanzadoRaw : rateOpRaw;
-    const usdProg = Number(row[cUsdProg]);
-    const usdLog = Number(row[cUsdLog]);
-    const tonsHrBruto = Number(row[cTonsHrBruto]);
-    const tonsHrNeto = Number(row[cTonsHrNeto]);
+    const usdProg = numCL(row[cUsdProg]);
+    const usdLog = numCL(row[cUsdLog]);
+    const tonsHrBruto = numCL(row[cTonsHrBruto]);
+    const tonsHrNeto = numCL(row[cTonsHrNeto]);
     const arriboRaw = cArribo>-1 ? row[cArribo] : null;
     const zarpeRaw = cZarpe>-1 ? row[cZarpe] : null;
     const aFechaISO = v => {
@@ -3726,12 +3737,18 @@ function parseRecaladas(wb){
       if(!d || isNaN(d.getTime())) return null;
       return d.toISOString();
     };
+    let cliente = normalizarCliente(cCliente>-1 ? row[cCliente] : null);
+    // Cliente vacío en una recalada de productos de acero: se asume Aceros Arequipa y se avisa al subir el archivo
+    if(cliente==='Sin Cliente' && categorizarProducto(prod)==='Productos de Acero'){
+      cliente = 'ACEROS AREQUIPA';
+      descartadas.push(String(nave).trim()+' (Cliente vacío: se asumió ACEROS AREQUIPA)');
+    }
     recaladas.push({
       anio: Number(y),
       mes: mes || null,
       nave: String(nave).trim(),
-      cliente: normalizarCliente(row[cCliente]),
-      producto: categoriaRecalada(normalizarCliente(row[cCliente]), prod),
+      cliente,
+      producto: categoriaRecalada(cliente, prod),
       tons: Math.round((emb+desc)*100)/100,
       rateContratado: isFinite(rateCon) && rateCon>0 ? rateCon : null,
       rateAlcanzado: isFinite(rateOp) && rateOp>0 && rateOp<=20000 ? rateOp : null,
@@ -4249,7 +4266,7 @@ setupDropzone('dz-rate','file-rate','estado-rate', wb => {
   inicializarFiltros();
   const avisos = [];
   if(resultado.filasDuplicadas>0) avisos.push(`se descartaron ${resultado.filasDuplicadas} fila(s) duplicada(s)`);
-  if(descartadas.length) avisos.push(`no se pudieron leer: ${descartadas.join(', ')}`);
+  if(descartadas.length) avisos.push(`revisar: ${descartadas.join(', ')}`);
   return avisos.length ? '⚠ ' + avisos.join(' · ') : null;
 });
 setupDropzone('dz-seguridad','file-seguridad','estado-seguridad', wb => { DATA.seguridad = parseSeguridad(wb); guardarEnStorage('seguridad', DATA.seguridad); });
